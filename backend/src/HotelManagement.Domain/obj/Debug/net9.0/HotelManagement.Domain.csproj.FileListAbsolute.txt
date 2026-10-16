@@ -1,0 +1,11 @@
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\bin\Debug\net9.0\HotelManagement.Domain.deps.json
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\bin\Debug\net9.0\HotelManagement.Domain.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\bin\Debug\net9.0\HotelManagement.Domain.pdb
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\HotelManagement.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\HotelManagement.Domain.AssemblyInfoInputs.cache
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\HotelManagement.Domain.AssemblyInfo.cs
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\HotelManagement.Domain.csproj.CoreCompileInputs.cache
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\HotelManagement.Domain.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\refint\HotelManagement.Domain.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\HotelManagement.Domain.pdb
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Domain\obj\Debug\net9.0\ref\HotelManagement.Domain.dll

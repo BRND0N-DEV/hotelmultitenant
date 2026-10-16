@@ -1,0 +1,6 @@
+{
+  "HotelManagement.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\USER\\Desktop\\hotelmultitenant\\backend\\src\\HotelManagement.Api",
+  "HotelManagement.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\USER\\Desktop\\hotelmultitenant\\backend\\src\\HotelManagement.Application",
+  "HotelManagement.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\USER\\Desktop\\hotelmultitenant\\backend\\src\\HotelManagement.Domain",
+  "HotelManagement.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\USER\\Desktop\\hotelmultitenant\\backend\\src\\HotelManagement.Infrastructure"
+}

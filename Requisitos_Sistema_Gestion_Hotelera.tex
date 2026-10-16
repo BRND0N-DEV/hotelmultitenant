@@ -1,0 +1,473 @@
+\documentclass[12pt,a4paper]{article}
+
+% -------------------------------------------------
+% Paquetes y configuración
+% -------------------------------------------------
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+
+\definecolor{azulhotel}{HTML}{17365D}
+\definecolor{azulclaro}{HTML}{D9EAF7}
+\definecolor{grisclaro}{HTML}{F2F2F2}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=azulhotel,
+  urlcolor=azulhotel,
+  pdftitle={Requisitos e historias de usuario - Sistema de Gestión Hotelera Integral},
+  pdfauthor={Documento de análisis de software}
+}
+\titleformat{\section}{\Large\bfseries\color{azulhotel}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{azulhotel}}{\thesubsection}{0.5em}{}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small Sistema de Gestión Hotelera Integral}
+\rhead{\small Requisitos de software}
+\cfoot{\thepage}
+\setlength{\headheight}{14.5pt}
+\setlist[itemize]{itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{itemsep=3pt,topsep=3pt}
+\renewcommand{\arraystretch}{1.2}
+
+\newcommand{\RF}[2]{\item[\textbf{#1}] #2}
+\newcommand{\RNF}[2]{\item[\textbf{#1}] #2}
+\newcommand{\HU}[5]{%
+  \subsection*{#1 -- #2}
+  \noindent\textbf{Prioridad:} #3 \hfill \textbf{Fase:} #4\\
+  \noindent\textbf{Historia:} #5
+  \vspace{2mm}
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Large\bfseries DOCUMENTO DE REQUISITOS DE SOFTWARE\par}
+  \vspace{0.8cm}
+  {\huge\bfseries Sistema de Gestión Hotelera Integral\par}
+  \vspace{0.3cm}
+  {\Large Plataforma multitenant para cuatro hoteles asociados\par}
+  \vspace{1.5cm}
+  \color{azulhotel}\rule{0.85\textwidth}{1.2pt}
+  \vspace{1cm}
+
+  \begin{tabular}{>{\bfseries}p{4cm} p{8cm}}
+    Producto & Sistema de gestión hotelera integral (PMS)\\
+    Organización & Cadena hotelera asociada, compuesta por cuatro sedes\\
+    Usuarios destinatarios & Junta de socios, administradores, recepción, camarería y auditoría\\
+    Backend previsto & .NET 9 o superior, ASP.NET Core Web API\\
+    Frontend previsto & Angular\\
+    Base de datos preferida & SQL Server\\
+    Documento & Requisitos funcionales, no funcionales e historias de usuario\\
+  \end{tabular}
+
+  \vfill
+  {\large Documento elaborado a partir de la especificación del proyecto\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+Este documento organiza los requisitos funcionales, los requisitos no funcionales y las historias de usuario del proyecto \textit{Sistema de Gestión Hotelera Integral Multitenant}. La solución busca centralizar la operación de cuatro hoteles asociados, manteniendo el aislamiento lógico de la información de cada sede y ofreciendo a la Junta de Socios una visión consolidada de la cadena.
+
+Actualmente, las reservas, los pagos, los consumos y los informes se administran mediante archivos de Excel y procesos manuales. Esto genera demoras, duplicidad de reservas, falta de trazabilidad, errores de cobro y dificultad para consultar indicadores en tiempo real.
+
+\section{Objetivo y alcance}
+
+\subsection{Objetivo general}
+Definir las capacidades y condiciones de calidad que debe cumplir una plataforma hotelera centralizada para gestionar reservas, huéspedes, habitaciones, tarifas, consumos, pagos, limpieza, reportes y auditoría.
+
+\subsection{Alcance funcional}
+El sistema incluirá:
+\begin{itemize}
+  \item Gestión multihotel y aislamiento de datos por sede.
+  \item Autenticación, usuarios, roles, permisos y asignación de hoteles.
+  \item Parametrización de hoteles, habitaciones, tarifas, temporadas, impuestos, políticas y servicios.
+  \item Cotización, disponibilidad, reservas, cancelaciones, check-in, consumos, pagos y check-out.
+  \item Gestión básica de limpieza de habitaciones.
+  \item Notificaciones por correo y comprobantes digitales.
+  \item Dashboard consolidado, reportes exportables y auditoría.
+  \item Consentimiento para tratamiento de datos personales y anonimización según permisos.
+\end{itemize}
+
+\subsection{Fuera del alcance}
+La pasarela de pagos en línea no forma parte de esta versión. Los pagos se registrarán manualmente indicando método y referencia. El portal de autogestión del huésped se contempla como una funcionalidad de fase posterior (HU-24).
+
+\section{Actores y roles}
+
+\begin{longtable}{p{3.2cm} p{10.2cm}}
+\toprule
+\textbf{Actor} & \textbf{Responsabilidades principales}\\
+\midrule
+Socio & Consulta de solo lectura de los indicadores consolidados de la cadena y de cada sede.\\
+Administrador Global & Configura hoteles, parámetros globales, empleados y roles; consulta información consolidada y gestiona procesos autorizados.\\
+Administrador de Sede & Administra la operación de su hotel, incluyendo habitaciones, reservas, personal y parámetros permitidos.\\
+Recepcionista & Consulta disponibilidad, crea y actualiza reservas, realiza check-in/check-out, registra consumos y pagos.\\
+Camarería / Supervisor & Consulta habitaciones asignadas y actualiza los estados de limpieza.\\
+Auditor & Consulta información de auditoría y exporta reportes de acuerdo con sus permisos.\\
+Huésped & Proporciona sus datos y consentimiento; recibe confirmaciones, vouchers y comprobantes. En esta versión no inicia sesión para crear reservas.\\
+\bottomrule
+\end{longtable}
+
+Los usuarios de sede operan únicamente dentro del hotel activo asignado. Los permisos deben aplicarse en el servidor y no depender solamente de la interfaz.
+
+\section{Requisitos funcionales}
+
+Los siguientes requisitos se derivan de las capacidades y reglas descritas en el documento fuente. La numeración RF permite referenciarlos durante el diseño, desarrollo y pruebas.
+
+\subsection{Acceso, usuarios y permisos}
+\begin{description}[leftmargin=2.1cm,style=nextline]
+  \RF{RF-01}{El sistema debe permitir iniciar sesión mediante correo electrónico y contraseña.}
+  \RF{RF-02}{El sistema debe administrar sesiones mediante un token de acceso de corta duración y un mecanismo de renovación seguro, con revocación y detección de reutilización de tokens.}
+  \RF{RF-03}{El sistema debe bloquear temporalmente la cuenta después de cinco intentos fallidos consecutivos y registrar el evento en auditoría.}
+  \RF{RF-04}{El Administrador Global debe poder crear, modificar, desactivar y asignar empleados a roles, departamentos, turnos y hoteles.}
+  \RF{RF-05}{Si un empleado tiene asignados varios hoteles, el sistema debe permitirle seleccionar como contexto activo únicamente una sede autorizada.}
+  \RF{RF-06}{El sistema debe aplicar permisos granulares por rol y acción. Una operación no autorizada dentro de la sede propia debe responder con error 403.}
+  \RF{RF-07}{El sistema debe impedir que un usuario consulte o modifique recursos operativos de otra sede. Los recursos pertenecientes a otra sede deben responder como no encontrados (404).}
+\end{description}
+
+\subsection{Parametrización de hoteles y servicios}
+\begin{description}[leftmargin=2.1cm,style=nextline]
+  \RF{RF-08}{El Administrador Global debe poder crear y configurar hoteles, incluyendo nombre, ciudad, dirección, zona horaria, moneda e identidad visual.}
+  \RF{RF-09}{El sistema debe impedir desactivar un hotel que tenga reservas futuras activas e informar la cantidad de reservas que lo impiden.}
+  \RF{RF-10}{El sistema debe permitir definir tipos de habitación, capacidad, comodidades y habitaciones físicas por sede.}
+  \RF{RF-11}{El sistema debe impedir números de habitación duplicados dentro de un mismo hotel, pero permitir que dos hoteles distintos utilicen el mismo número.}
+  \RF{RF-12}{El sistema debe impedir desactivar habitaciones que tengan reservas futuras activas.}
+  \RF{RF-13}{El sistema debe permitir configurar tarifas base, temporadas, recargos de fin de semana y promociones por tipo de habitación.}
+  \RF{RF-14}{El sistema debe rechazar temporadas con fechas traslapadas dentro de la misma configuración hotelera.}
+  \RF{RF-15}{El sistema debe aplicar promociones vigentes y mostrar el descuento en el desglose de la tarifa.}
+  \RF{RF-16}{El sistema debe permitir configurar impuestos y políticas de cancelación por sede. El cálculo de cancelación debe usar la política vigente al momento de realizar la reserva.}
+  \RF{RF-17}{El Administrador de Sede debe poder administrar un catálogo de servicios adicionales con precio por hotel, por ejemplo desayuno, spa, parqueadero, minibar y lavandería. Los servicios inactivos no deben estar disponibles para registrar consumos.}
+\end{description}
+
+\subsection{Disponibilidad y reservas}
+\begin{description}[leftmargin=2.1cm,style=nextline]
+  \RF{RF-18}{El recepcionista debe poder consultar disponibilidad por rango de fechas, tipo de habitación y cantidad de huéspedes, con precio total y desglose por noche.}
+  \RF{RF-19}{La consulta de disponibilidad no debe mostrar habitaciones ocupadas por reservas activas que se traslapen con el rango solicitado.}
+  \RF{RF-20}{El sistema debe permitir consultar disponibilidad entre sedes y devolver únicamente sede, tipo de habitación, cantidad disponible y tarifa referencial. Esta consulta debe quedar auditada.}
+  \RF{RF-21}{La consulta entre sedes no debe exponer reservas, datos de huéspedes, números de habitación ni consumos de otras sedes.}
+  \RF{RF-22}{El recepcionista debe poder crear una reserva en un flujo integrado con huésped titular, fechas, habitación, tarifa, descuentos e impuestos. La reserva inicial debe quedar en estado \textit{Pendiente}.}
+  \RF{RF-23}{El sistema debe admitir una clave de idempotencia al crear reservas, de forma que repetir la misma petición no genere una reserva duplicada.}
+  \RF{RF-24}{El sistema debe impedir el overbooking mediante una garantía de integridad en la base de datos para evitar reservas activas de una misma habitación con fechas traslapadas.}
+  \RF{RF-25}{El sistema debe detectar ediciones concurrentes de una misma reserva o habitación mediante control de concurrencia optimista y comunicar el conflicto.}
+  \RF{RF-26}{El sistema debe validar las transiciones de estado de las reservas: Pendiente, Confirmada, Check-In, Check-Out, Liquidada, Anulada y No-Show, de acuerdo con las reglas de negocio.}
+  \RF{RF-27}{El sistema debe registrar en el historial de cada transición el estado anterior, el nuevo estado, el usuario, la fecha y el motivo cuando corresponda.}
+  \RF{RF-28}{El sistema debe permitir cancelar reservas o registrar No-Show de acuerdo con la política de la sede, calcular la penalidad aplicable y liberar la disponibilidad cuando corresponda.}
+  \RF{RF-29}{El sistema debe ofrecer un calendario de ocupación por habitación, con un rango de consulta de hasta 14 días y estados identificables por color y texto.}
+\end{description}
+
+\subsection{Recepción, estancia, consumos y pagos}
+\begin{description}[leftmargin=2.1cm,style=nextline]
+  \RF{RF-30}{El recepcionista debe poder registrar al huésped titular y a sus acompañantes, incluyendo los datos de identificación requeridos para la estancia.}
+  \RF{RF-31}{El sistema debe impedir completar el check-in si la habitación no está en estado Limpia/Disponible o si no se ha registrado el consentimiento de tratamiento de datos requerido.}
+  \RF{RF-32}{Al completar el check-in, la reserva debe pasar a estado Check-In y la habitación a Ocupada.}
+  \RF{RF-33}{El sistema debe permitir que camarería consulte y actualice el estado de limpieza de las habitaciones desde una interfaz adaptable a tabletas.}
+  \RF{RF-34}{Al completar el check-out, la habitación debe pasar automáticamente al estado Sucia.}
+  \RF{RF-35}{El recepcionista debe poder registrar consumos y cargos en el folio del huésped, incluyendo cantidad, valor, usuario y hora.}
+  \RF{RF-36}{Los cargos ya registrados no deben editarse directamente; su corrección debe realizarse mediante anulación con motivo y contra-asiento auditado.}
+  \RF{RF-37}{El folio debe mostrar cargos, impuestos, pagos y saldo pendiente.}
+  \RF{RF-38}{El sistema debe permitir registrar pagos y abonos con método y referencia, actualizar el saldo y generar un recibo.}
+  \RF{RF-39}{El registro de pagos debe admitir una clave de idempotencia para evitar duplicaciones por reintentos de red.}
+  \RF{RF-40}{El sistema debe impedir el check-out cuando el saldo del folio sea distinto de cero y debe informar el saldo pendiente.}
+  \RF{RF-41}{Cuando el saldo sea cero, el sistema debe permitir cerrar la estancia, generar un comprobante PDF y pasar la reserva a Liquidada cuando el folio esté cerrado y el comprobante final haya sido emitido.}
+  \RF{RF-42}{El sistema debe permitir cerrar la caja por turno y congelar los totales por método de pago del cierre realizado.}
+\end{description}
+
+\subsection{Notificaciones, privacidad y datos personales}
+\begin{description}[leftmargin=2.1cm,style=nextline]
+  \RF{RF-43}{El sistema debe enviar correos transaccionales con el detalle de la reserva, voucher con código QR y comprobantes, utilizando la identidad visual de la sede.}
+  \RF{RF-44}{El envío de correo debe ejecutarse de forma asíncrona; los fallos del proveedor no deben revertir una reserva válida y deben permitir reintentos de hasta tres veces, con registro del resultado.}
+  \RF{RF-45}{El sistema debe registrar el consentimiento expreso para el tratamiento de datos personales, incluyendo fecha, hora, IP y versión de la política aceptada.}
+  \RF{RF-46}{El sistema debe impedir finalizar la reserva o el check-in cuando el consentimiento requerido no esté registrado.}
+  \RF{RF-47}{El Administrador Global debe poder ejecutar la anonimización irreversible de los datos identificables de un huésped cuando exista una solicitud aprobada y conservar los valores contables de folios y comprobantes.}
+  \RF{RF-48}{El portal de autogestión del huésped se considera una funcionalidad de fase posterior y no es obligatorio para la versión inicial.}
+\end{description}
+
+\subsection{Gerencia, reportes y auditoría}
+\begin{description}[leftmargin=2.1cm,style=nextline]
+  \RF{RF-49}{El sistema debe presentar un dashboard consolidado de la cadena y permitir filtrar las métricas por sede.}
+  \RF{RF-50}{El dashboard debe presentar ingresos diarios, semanales y mensuales, ocupación, ADR, RevPAR y cancelaciones.}
+  \RF{RF-51}{El dashboard debe actualizar las métricas sin requerir una recarga completa de la página, mediante sondeo periódico o tecnología equivalente.}
+  \RF{RF-52}{El sistema debe permitir exportar transacciones y listas de huéspedes a Excel (.xlsx) y PDF según los permisos del usuario.}
+  \RF{RF-53}{Los archivos exportados deben incluir formato profesional, totales y metadatos de fecha, hora y usuario emisor.}
+  \RF{RF-54}{El sistema debe permitir consultar auditoría por usuario, entidad y fecha, mostrando operación y valores anteriores y nuevos.}
+  \RF{RF-55}{La auditoría debe contemplar los niveles de negocio, técnico y HTTP, incluyendo operaciones, cambios y datos técnicos de las peticiones.}
+\end{description}
+
+\section{Requisitos no funcionales}
+
+Los requisitos no funcionales establecen las condiciones de calidad, seguridad, rendimiento y operación del sistema. Los valores siguientes mantienen los objetivos medibles indicados en el documento fuente.
+
+\begin{longtable}{p{2.5cm} p{7.3cm} p{3.6cm}}
+\toprule
+\textbf{ID / categoría} & \textbf{Requisito} & \textbf{Verificación}\\
+\midrule
+RNF-01 Rendimiento & La consulta de disponibilidad debe responder con un percentil 95 (p95) inferior a 800 ms bajo el escenario de prueba acordado. & Prueba de carga con datos semilla y medición de latencias.\\
+RNF-02 Concurrencia & El sistema debe soportar 50 usuarios simultáneos sin errores de integridad de datos. & Prueba de carga y prueba concurrente de reservas.\\
+RNF-03 Disponibilidad & El objetivo de disponibilidad es del 99\% durante el horario operativo; el horario y la ventana de medición deben acordarse. & Health checks y reporte de despliegue.\\
+RNF-04 Respaldo y recuperación & La base de datos debe contar con respaldo diario y un procedimiento de restauración documentado y probado. & Ejecución demostrable del script y prueba de restauración.\\
+RNF-05 Seguridad & La revisión no debe identificar vulnerabilidades críticas del OWASP Top 10 en el alcance evaluado. & Lista de verificación OWASP y análisis estático.\\
+RNF-06 Accesibilidad & Las pantallas críticas de reserva, check-in y folio deben cumplir WCAG 2.1 nivel AA. & Revisión con Lighthouse/axe y navegación por teclado.\\
+RNF-07 Compatibilidad & La interfaz debe funcionar en las dos últimas versiones de Chrome, Edge y Firefox, en escritorio y tableta. & Pruebas manuales documentadas en navegadores y dispositivos objetivo.\\
+RNF-08 Mantenibilidad & La cobertura de pruebas debe ser al menos del 80\% en las capas Domain y Application; el quality gate de SonarQube debe aprobarse. & Informe de cobertura en CI y resultado de SonarQube.\\
+RNF-09 Observabilidad & Los registros deben ser estructurados e incluir un identificador de correlación por petición. & Inspección de logs durante una demostración.\\
+RNF-10 Aislamiento multitenant & Toda consulta o modificación operativa debe respetar el hotel asociado al contexto activo, salvo la consulta de disponibilidad entre sedes expresamente autorizada. & Pruebas de integración por módulo intentando acceder a datos de otra sede.\\
+RNF-11 Integridad de reservas & La prevención del overbooking debe garantizarse en la base de datos y no únicamente mediante validaciones en código. & Pruebas de reservas simultáneas y revisión de restricciones/índices.\\
+RNF-12 Seguridad de sesión & Los tokens de acceso deben durar entre 15 y 30 minutos. Los refresh tokens deben rotarse, almacenarse de forma segura y entregarse mediante cookies HttpOnly, Secure y SameSite=Strict en navegador. & Pruebas de autenticación, expiración, revocación y configuración de cookies.\\
+RNF-13 Protección de contraseñas & Las contraseñas deben almacenarse usando BCrypt con costo adecuado o Argon2id; nunca deben guardarse en texto plano ni incluirse en logs. & Revisión de implementación y configuración.\\
+RNF-14 Interfaz adaptable & Las pantallas deben ser responsive y adecuadas para resoluciones de escritorio de 1920x1080 y 1366x768, además de tabletas. & Pruebas visuales y funcionales en resoluciones objetivo.\\
+RNF-15 Usabilidad y validación & Los formularios deben mostrar errores específicos, deshabilitar el guardado cuando sean inválidos y proporcionar mensajes accionables. Las tablas deben paginar en servidor y aplicar debounce de 300 ms en búsquedas. & Pruebas funcionales y revisión de interfaz.\\
+RNF-16 Trazabilidad & Las operaciones sensibles deben conservar registro de usuario, fecha y cambios, respetando las políticas de borrado lógico y auditoría. & Pruebas de auditoría y revisión de registros.\\
+\bottomrule
+\end{longtable}
+
+\section{Historias de usuario}
+
+Las historias de usuario conservan el formato \textit{Como [rol], quiero [necesidad], para [beneficio]}. Las prioridades y fases se toman de la especificación del proyecto. Los criterios de aceptación se expresan en formato Dado/Cuando/Entonces y se resumen para facilitar su trazabilidad.
+
+\subsection{Épica 0: Acceso, usuarios y seguridad}
+
+\HU{HU-01}{Inicio de sesión y sesión segura}{Must}{1}{Como usuario del sistema, quiero iniciar sesión con correo y contraseña y mantener una sesión segura, para acceder únicamente a las funciones permitidas por mi rol.}
+\begin{itemize}
+  \item Dado que las credenciales son válidas, cuando inicio sesión, entonces recibo un token de acceso de 15 a 30 minutos y un refresh token rotativo seguro.
+  \item Dado que se intenta reutilizar un refresh token usado o revocado, cuando se solicita renovar la sesión, entonces se rechaza y se revoca la cadena de tokens.
+  \item Dado que ocurren cinco intentos fallidos consecutivos, cuando se intenta un sexto, entonces la cuenta se bloquea temporalmente y el evento queda auditado.
+\end{itemize}
+
+\HU{HU-02}{Empleados, roles y asignación a hoteles}{Must}{1}{Como Administrador Global, quiero crear empleados con rol, departamento, turno y hoteles asignados, para controlar quién opera en cada sede.}
+\begin{itemize}
+  \item Dado un empleado asignado a un hotel, cuando inicia sesión, entonces queda limitado al contexto de ese hotel.
+  \item Dado un empleado asignado a varios hoteles, cuando inicia sesión, entonces puede elegir y cambiar únicamente entre sus sedes asignadas.
+  \item Dado un empleado desactivado, cuando se confirma la desactivación, entonces se revocan sus refresh tokens y se conserva su historial mediante borrado lógico.
+\end{itemize}
+
+\subsection{Épica 1: Parametrización de la cadena}
+
+\HU{HU-03}{Gestión de hoteles}{Must}{1}{Como Administrador Global, quiero crear y configurar sedes con nombre, ciudad, dirección, zona horaria, moneda e identidad visual, para administrar la cadena sin depender del equipo de desarrollo.}
+\begin{itemize}
+  \item Dado un hotel con datos válidos, cuando lo guardo, entonces queda disponible para asignar empleados y habitaciones.
+  \item Dado un hotel con reservas futuras activas, cuando intento desactivarlo, entonces la operación se rechaza e informa cuántas reservas la impiden.
+\end{itemize}
+
+\HU{HU-04}{Tipos de habitación y habitaciones}{Must}{1}{Como Administrador Global o de Sede, quiero definir tipos de habitación, capacidades, comodidades y habitaciones físicas, para mantener parametrizado el inventario real de cada hotel.}
+\begin{itemize}
+  \item Dado un número de habitación ya registrado en el mismo hotel, cuando intento crearlo nuevamente, entonces el sistema lo rechaza; el mismo número puede existir en otra sede.
+  \item Dada una habitación con reservas futuras activas, cuando intento desactivarla, entonces el sistema bloquea la operación y explica el motivo.
+\end{itemize}
+
+\HU{HU-05}{Temporadas, fines de semana y promociones}{Must}{1}{Como Administrador Global, quiero definir tarifas base, temporadas, recargos de fin de semana y promociones, para calcular precios de manera consistente.}
+\begin{itemize}
+  \item Dadas dos temporadas con fechas traslapadas para una misma configuración, cuando intento guardarlas, entonces el sistema rechaza el traslape.
+  \item Dada una promoción vigente, cuando una reserva cae dentro de su vigencia, entonces el descuento se aplica y aparece en el desglose.
+\end{itemize}
+
+\HU{HU-06}{Impuestos y políticas de cancelación por sede}{Must}{1}{Como Administrador Global, quiero asignar impuestos y políticas de cancelación a cada sede, para respetar las reglas comerciales y normativas correspondientes.}
+\begin{itemize}
+  \item Dado un impuesto configurado, cuando se calcula una reserva, entonces se agrega por separado al folio.
+  \item Dada una política de cancelación, cuando se cancela una reserva, entonces la penalidad se calcula con la política vigente al momento de reservar.
+\end{itemize}
+
+\HU{HU-07}{Servicios adicionales}{Should}{1}{Como Administrador de Sede, quiero administrar el catálogo de servicios y sus precios por hotel, para cargar correctamente los consumos al folio del huésped.}
+\begin{itemize}
+  \item Dado un servicio inactivo, cuando recepción registra un consumo, entonces el servicio no aparece como opción seleccionable.
+\end{itemize}
+
+\subsection{Épica 2: Disponibilidad y reservas}
+
+\HU{HU-08}{Consulta de disponibilidad y cotización}{Must}{1}{Como Recepcionista, quiero consultar habitaciones disponibles por fechas, tipo y número de huéspedes con el precio total, para responder al cliente en pocos segundos.}
+\begin{itemize}
+  \item Dado un rango de fechas, cuando consulto, entonces veo las habitaciones libres de mi hotel y el precio total desglosado por noche.
+  \item Dada una habitación con una reserva activa que cubre parte del rango, cuando consulto, entonces no aparece como disponible.
+\end{itemize}
+
+\HU{HU-09}{Disponibilidad entre sedes}{Must}{2}{Como Recepcionista, quiero consultar disponibilidad en otras sedes, para ofrecer alternativas sin realizar llamadas telefónicas.}
+\begin{itemize}
+  \item Dada una consulta, cuando se ejecuta, entonces se muestran solo sede, tipo de habitación, cantidad disponible y tarifa referencial.
+  \item Dada cualquier respuesta, entonces no se exponen reservas, huéspedes, números de habitación ni consumos de otras sedes.
+  \item Dada una consulta entre sedes, entonces su uso queda registrado en la auditoría HTTP.
+\end{itemize}
+
+\HU{HU-10}{Crear reserva con cálculo de tarifa}{Must}{1}{Como Recepcionista, quiero crear una reserva en un único flujo con huésped titular, fechas y habitación, para reducir pasos manuales y errores.}
+\begin{itemize}
+  \item Dada una reserva válida, cuando la guardo, entonces se crea en estado Pendiente con tarifa, descuentos e impuestos desglosados.
+  \item Dada la misma petición con la misma clave de idempotencia, cuando se repite, entonces se devuelve la respuesta original y no se crea otra reserva.
+\end{itemize}
+
+\HU{HU-11}{Prevención de overbooking}{Must}{1}{Como Recepcionista, quiero que el sistema impida asignar una habitación a dos reservas con fechas traslapadas, para evitar sobreventas.}
+\begin{itemize}
+  \item Dadas dos peticiones simultáneas para la misma habitación y fechas, cuando se procesan, entonces solo una operación puede reservarla y la otra recibe un conflicto 409.
+  \item Dado que una reserva termina el mismo día en que otra comienza, entonces no se considera traslape.
+  \item Dada una edición concurrente de una misma reserva, cuando dos usuarios guardan cambios, entonces se detecta el conflicto y se responde 409.
+\end{itemize}
+
+\HU{HU-12}{Máquina de estados de la reserva}{Must}{1}{Como Recepcionista, quiero cambiar el estado de una reserva según el flujo definido, para garantizar la trazabilidad de la estancia.}
+\begin{itemize}
+  \item Dada una transición no permitida, cuando se intenta, entonces se rechaza con error 422.
+  \item Dada una transición válida, entonces se registra en el historial el usuario, la fecha, el estado anterior, el nuevo estado y el motivo cuando corresponda.
+\end{itemize}
+
+\HU{HU-13}{Cancelación, No-Show y reembolso}{Must}{2}{Como Recepcionista o Administrador de Sede, quiero anular reservas o marcar No-Show aplicando la política del hotel, para calcular correctamente penalidades y liberar la habitación.}
+\begin{itemize}
+  \item Dada una cancelación dentro de la ventana gratuita, cuando se confirma, entonces la penalidad es cero y se genera el comprobante de saldo a favor si hubo abono.
+  \item Dada una cancelación fuera de la ventana gratuita, cuando se confirma, entonces se calcula y muestra la penalidad antes de finalizar.
+  \item Dada la confirmación de la cancelación, entonces la habitación queda disponible para esas fechas.
+\end{itemize}
+
+\HU{HU-14}{Calendario de ocupación}{Should}{2}{Como Recepcionista, quiero consultar un calendario de habitaciones por día con sus reservas, para conocer rápidamente el estado de ocupación.}
+\begin{itemize}
+  \item Dado un hotel y un rango de 14 días, cuando abro el calendario, entonces veo las habitaciones y sus reservas con estados diferenciados por color y texto.
+\end{itemize}
+
+\subsection{Épica 3: Operación en recepción}
+
+\HU{HU-15}{Check-in y registro de huéspedes}{Must}{1}{Como Recepcionista, quiero registrar al titular y sus acompañantes y realizar el check-in, para cumplir el protocolo de ingreso.}
+\begin{itemize}
+  \item Dada una habitación que no está Limpia/Disponible, cuando intento el check-in, entonces se bloquea la operación y se sugiere una alternativa.
+  \item Dado un check-in completado, entonces la reserva pasa a Check-In y la habitación a Ocupada.
+  \item Dado que no existe consentimiento de tratamiento de datos, entonces no se permite completar el check-in.
+\end{itemize}
+
+\HU{HU-16}{Housekeeping}{Must}{2}{Como Camarera o Supervisor, quiero consultar y cambiar desde una tableta el estado de limpieza de mis habitaciones, para que recepción conozca en tiempo real cuáles están listas.}
+\begin{itemize}
+  \item Dado un check-out completado, entonces la habitación pasa automáticamente a Sucia.
+  \item Dada una habitación cuya limpieza terminó, cuando la camarera la marca como Limpia, entonces recepción ve el estado actualizado sin recargar.
+  \item Dada una tableta de 10 pulgadas, entonces los controles táctiles son suficientemente amplios para usarse cómodamente.
+\end{itemize}
+
+\HU{HU-17}{Consumos en habitación y folio}{Must}{1}{Como Recepcionista, quiero registrar cargos de minibar, restaurante, lavandería y otros servicios en el folio, para evitar cobros omitidos.}
+\begin{itemize}
+  \item Dado un servicio del catálogo, cuando registro un consumo, entonces queda en el folio con cantidad, valor, usuario y hora.
+  \item Dado un cargo que requiere corrección, entonces no se edita directamente: se anula con motivo mediante un contra-asiento auditado.
+  \item Dado un folio consultado, entonces se muestran cargos, impuestos, pagos y saldo.
+\end{itemize}
+
+\HU{HU-18}{Pagos y abonos}{Must}{1}{Como Recepcionista, quiero registrar pagos y abonos con método y referencia, para mantener actualizado el saldo del folio.}
+\begin{itemize}
+  \item Dado un pago con método y referencia, cuando lo registro, entonces reduce el saldo y genera un recibo.
+  \item Dada la misma petición con la misma clave de idempotencia, cuando se repite, entonces el pago no se duplica.
+\end{itemize}
+
+\HU{HU-19}{Check-out y comprobante}{Must}{1}{Como Recepcionista, quiero cerrar la estancia y emitir el comprobante final, para liquidar la cuenta de forma rápida y correcta.}
+\begin{itemize}
+  \item Dado un saldo distinto de cero, cuando intento el check-out, entonces se bloquea la operación y se informa el valor pendiente.
+  \item Dado un saldo igual a cero, cuando realizo el check-out, entonces la reserva pasa a Check-Out, la habitación a Sucia y se genera un PDF.
+  \item Dado el folio cerrado y el comprobante final emitido, entonces la reserva pasa a Liquidada.
+\end{itemize}
+
+\HU{HU-20}{Cierre de caja por turno}{Should}{2}{Como Recepcionista o Administrador de Sede, quiero consultar y cerrar el total de pagos recibidos en mi turno por método de pago, para cuadrar caja sin hojas de cálculo.}
+\begin{itemize}
+  \item Dado un turno, cuando lo cierro, entonces se congelan los totales por método de pago y el cierre no admite nuevos pagos.
+\end{itemize}
+
+\subsection{Épica 4: Experiencia y privacidad del huésped}
+
+\HU{HU-21}{Notificaciones por correo}{Must}{2}{Como Huésped, quiero recibir correos automáticos con el detalle de mi reserva, voucher con código QR y comprobantes, para disponer de respaldo digital inmediato.}
+\begin{itemize}
+  \item Dada una reserva confirmada, entonces se envía un correo de forma asíncrona sin retrasar la respuesta HTTP.
+  \item Dado un fallo del proveedor de correo, entonces la reserva no se afecta, el envío se reintenta hasta tres veces y el resultado queda registrado.
+  \item Dada la plantilla del correo, entonces es adaptable y usa la identidad visual del hotel correspondiente.
+\end{itemize}
+
+\HU{HU-22}{Consentimiento de datos (Habeas Data)}{Must}{2}{Como Huésped, quiero autorizar expresamente el tratamiento de mis datos personales, para que se respeten mis derechos de privacidad.}
+\begin{itemize}
+  \item Dada una reserva o un check-in, cuando falta el consentimiento, entonces no se puede finalizar el proceso.
+  \item Dado el consentimiento, entonces se guardan fecha, hora, IP y versión de la política aceptada.
+\end{itemize}
+
+\HU{HU-23}{Derecho al olvido y anonimización}{Should}{3}{Como Administrador Global, quiero anonimizar los datos identificables de un huésped cuando exista una solicitud aprobada, para atender la solicitud sin perder la información contable requerida.}
+\begin{itemize}
+  \item Dada una solicitud aprobada, cuando se ejecuta, entonces nombre, documento, correo y teléfono se reemplazan por valores irreversibles.
+  \item Dada la anonimización, entonces los valores numéricos de folios y comprobantes permanecen intactos.
+  \item Dada la operación, entonces queda auditada y no puede deshacerse.
+\end{itemize}
+
+\HU{HU-24}{Portal del huésped}{Could}{3}{Como Huésped, quiero consultar y reservar en línea, para autogestionar mi estancia.}
+\begin{itemize}
+  \item Dado un huésped autenticado, cuando consulta sus reservas, entonces solo puede ver las que le pertenecen.
+  \item Esta funcionalidad es de fase posterior y su alcance debe confirmarse según el tiempo disponible.
+\end{itemize}
+
+\subsection{Épica 5: Gerencia, reportes y auditoría}
+
+\HU{HU-25}{Dashboard consolidado multihotel}{Must}{2}{Como Socio, quiero consultar indicadores casi en tiempo real de la cadena y de cada sede, para tomar decisiones con información actualizada.}
+\begin{itemize}
+  \item Dado el dashboard, cuando selecciono la cadena, entonces veo ingresos diarios, semanales y mensuales, ocupación, ADR, RevPAR y cancelaciones consolidadas.
+  \item Dado el selector de hotel, cuando elijo una sede, entonces todas las métricas se filtran a esa sede.
+  \item Dados nuevos datos, entonces el panel se actualiza sin recargar la página completa.
+\end{itemize}
+
+\HU{HU-26}{Exportación a Excel y PDF}{Should}{2}{Como Auditor o Administrador de Sede, quiero exportar transacciones y listas de huéspedes a XLSX y PDF, para realizar conciliaciones contables.}
+\begin{itemize}
+  \item Dada una exportación grande, cuando se genera, entonces se procesa por streaming sin cargar todo el contenido en memoria.
+  \item Dado el archivo generado, entonces incluye formato profesional, totales y metadatos de fecha, hora y usuario emisor.
+\end{itemize}
+
+\HU{HU-27}{Consulta de auditoría}{Should}{3}{Como Auditor, quiero consultar cambios por usuario, entidad y fecha, para detectar modificaciones no autorizadas o inconsistencias.}
+\begin{itemize}
+  \item Dado un filtro de consulta, entonces veo la operación, el usuario y los valores anteriores y nuevos.
+  \item Dado un usuario con rol Auditor, entonces el acceso es de solo lectura; el Administrador de Sede solo puede consultar la auditoría de su propio hotel.
+\end{itemize}
+
+\section{Reglas de negocio transversales}
+
+\begin{enumerate}
+  \item \textbf{Aislamiento por sede:} toda entidad operativa debe asociarse a un hotel y filtrarse automáticamente por el contexto de sesión.
+  \item \textbf{Disponibilidad entre sedes:} es una excepción de solo lectura y únicamente puede revelar sede, tipo de habitación, cantidad disponible y tarifa referencial.
+  \item \textbf{Estados de reserva:} las transiciones no definidas deben rechazarse con error 422.
+  \item \textbf{Check-in:} requiere fecha válida, habitación Limpia/Disponible y consentimiento registrado.
+  \item \textbf{Check-out:} exige saldo del folio igual a cero.
+  \item \textbf{Folio:} los cargos registrados son inmutables; las correcciones se realizan mediante contra-asientos auditados.
+  \item \textbf{Idempotencia:} repetir una petición de creación de reserva o registro de pago con la misma clave no debe producir efectos duplicados.
+  \item \textbf{Concurrencia:} el control de versión de fila ayuda a detectar ediciones simultáneas, pero la prevención de overbooking requiere una restricción de integridad en la base de datos.
+  \item \textbf{Pagos en línea:} no se incluye una pasarela de pagos en esta versión; los pagos se registran manualmente.
+  \item \textbf{Privacidad:} solo se deben recopilar datos necesarios para la estancia y debe conservarse evidencia del consentimiento.
+\end{enumerate}
+
+\section{Trazabilidad entre requisitos e historias de usuario}
+
+\begin{longtable}{p{4.1cm} p{4cm} p{5.2cm}}
+\toprule
+\textbf{Área} & \textbf{Requisitos relacionados} & \textbf{Historias relacionadas}\\
+\midrule
+Acceso y seguridad & RF-01 a RF-07; RNF-12, RNF-13 & HU-01, HU-02\\
+Parametrización & RF-08 a RF-17 & HU-03, HU-04, HU-05, HU-06, HU-07\\
+Disponibilidad y reservas & RF-18 a RF-29; RNF-01, RNF-02, RNF-10, RNF-11 & HU-08 a HU-14\\
+Recepción y estancia & RF-30 a RF-42 & HU-15 a HU-20\\
+Notificaciones y privacidad & RF-43 a RF-48 & HU-21 a HU-24\\
+Gerencia y auditoría & RF-49 a RF-55; RNF-09, RNF-16 & HU-25, HU-26, HU-27\\
+Calidad transversal & RNF-03 a RNF-08, RNF-14, RNF-15 & Aplica a todas las historias según la pantalla o proceso involucrado\\
+\bottomrule
+\end{longtable}
+
+\section{Supuestos y aspectos por confirmar}
+
+Los siguientes puntos se mantienen como decisiones o asuntos pendientes del documento fuente y no deben considerarse cerrados sin validación:
+\begin{itemize}
+  \item Confirmar con la Junta la definición operativa de \textit{Liquidada}: folio cerrado y comprobante final emitido.
+  \item Ajustar y acordar el horario operativo para medir el objetivo de disponibilidad del 99\%.
+  \item Confirmar las obligaciones legales y contables aplicables a la conservación de folios y comprobantes después de una anonimización.
+  \item La multimoneda es deseable, pero no obligatoria; la moneda base prevista es COP.
+  \item La matriz de roles y permisos es una propuesta que debe validar la Junta.
+  \item El portal de huésped corresponde a una fase posterior.
+  \item El documento fuente menciona SQL Server como base preferida y también describe alternativas técnicas para imponer la no superposición de fechas; la implementación concreta debe verificarse con el motor finalmente seleccionado.
+\end{itemize}
+
+\section{Conclusión}
+
+Los requisitos funcionales describen las operaciones que debe ofrecer el sistema, desde el acceso y la configuración de sedes hasta las reservas, la estancia, los pagos y los reportes. Los requisitos no funcionales establecen objetivos medibles de rendimiento, disponibilidad, seguridad, accesibilidad, compatibilidad, mantenibilidad y observabilidad. Las 27 historias de usuario conectan esas capacidades con las necesidades de los actores del sistema y aportan criterios de aceptación que pueden utilizarse para planificar el desarrollo y diseñar las pruebas.
+
+\end{document}

@@ -1,0 +1,15 @@
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\bin\Debug\net9.0\HotelManagement.Application.deps.json
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\bin\Debug\net9.0\HotelManagement.Application.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\bin\Debug\net9.0\HotelManagement.Application.pdb
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\bin\Debug\net9.0\HotelManagement.Domain.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\bin\Debug\net9.0\HotelManagement.Domain.pdb
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.csproj.AssemblyReference.cache
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.AssemblyInfoInputs.cache
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.AssemblyInfo.cs
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.csproj.CoreCompileInputs.cache
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelMan.6B58BC18.Up2Date
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\refint\HotelManagement.Application.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.pdb
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\ref\HotelManagement.Application.dll
