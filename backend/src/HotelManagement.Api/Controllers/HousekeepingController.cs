@@ -25,6 +25,7 @@ public class HousekeepingController : ControllerBase
         _tenantContext = tenantContext;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
     [HttpGet("rooms")]
     public async Task<ActionResult<IEnumerable<RoomDto>>> GetHousekeepingRooms([FromQuery] int? floor, [FromQuery] RoomCleaningStatus? cleaningStatus)
     {
@@ -60,11 +61,16 @@ public class HousekeepingController : ControllerBase
         return Ok(rooms);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
     [HttpPut("rooms/{roomId}/status")]
     public async Task<IActionResult> UpdateCleaningStatus(int roomId, [FromBody] UpdateRoomStatusDto dto)
     {
+        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
         var room = await _dbContext.Rooms.FindAsync(roomId);
-        if (room == null) return NotFound(new { message = "Habitación no encontrada." });
+        if (room == null || (!_tenantContext.IsGlobalBypass && room.HotelId != targetHotelId))
+        {
+            return NotFound(new { message = "Habitación no encontrada en la sede activa." });
+        }
 
         if (dto.CleaningStatus.HasValue)
         {

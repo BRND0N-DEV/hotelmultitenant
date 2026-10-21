@@ -57,8 +57,8 @@ public class TenantResolutionMiddleware
         // 1. Verificar si el endpoint es público o administrativo global
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
 
-        // Rutas que no requieren aislamiento por sede o son de autenticación
-        if (path.StartsWith("/api/auth") || path.StartsWith("/swagger") || path.StartsWith("/health"))
+        // Rutas que no requieren aislamiento por sede o son de autenticación / verificación pública
+        if (path.StartsWith("/api/auth") || path.StartsWith("/swagger") || path.StartsWith("/health") || path.StartsWith("/api/reservations/verify-voucher"))
         {
             await _next(context);
             return;

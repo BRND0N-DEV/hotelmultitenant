@@ -220,11 +220,16 @@ public class RoomsController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateRoomStatus(int id, [FromBody] UpdateRoomStatusDto dto)
     {
+        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
         var room = await _dbContext.Rooms.FindAsync(id);
-        if (room == null) return NotFound(new { message = "Habitación no encontrada." });
+        if (room == null || (!_tenantContext.IsGlobalBypass && room.HotelId != targetHotelId))
+        {
+            return NotFound(new { message = "Habitación no encontrada en la sede activa." });
+        }
 
         if (dto.OperationalStatus.HasValue) room.OperationalStatus = dto.OperationalStatus.Value;
         if (dto.CleaningStatus.HasValue) room.CleaningStatus = dto.CleaningStatus.Value;

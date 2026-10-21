@@ -65,8 +65,13 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// 4. Controladores y CORS
-builder.Services.AddControllers();
+// 4. Controladores y CORS con soporte Unicode completo (tildes, ñ) y serialización de enums como cadenas
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -85,9 +90,9 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Sistema de Gestión Hotelera Integral PMS (API)",
+        Title = "CONTINENTALIA SAS — Sistema de Gestión Hotelera Integral (API)",
         Version = "v1",
-        Description = "API RESTful multitenant para la cadena hotelera de 4 sedes asociadas."
+        Description = "API RESTful multitenant corporativa de CONTINENTALIA SAS para gestión hotelera centralizada."
     });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

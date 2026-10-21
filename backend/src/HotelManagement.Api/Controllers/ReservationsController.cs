@@ -40,6 +40,7 @@ public class ReservationsController : ControllerBase
         _emailService = emailService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ReservationDto>>> GetReservations(
         [FromQuery] ReservationStatus? status,
@@ -102,6 +103,7 @@ public class ReservationsController : ControllerBase
         return Ok(list);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<ReservationDetailDto>> GetReservation(int id)
     {
@@ -217,6 +219,7 @@ public class ReservationsController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost]
     public async Task<ActionResult<ReservationDto>> CreateReservation([FromBody] CreateReservationDto dto)
     {
@@ -397,7 +400,8 @@ public class ReservationsController : ControllerBase
         await _dbContext.SaveChangesAsync();
 
         // 8. Envío asíncrono de correo con QR (RF-43, RF-44)
-        var qrCodeBytes = _qrCodeService.GenerateQrCodePng($"HOTEL:{hotelCode}|RES:{reservation.Code}|GUEST:{guest.FullName}|ROOM:{room.RoomNumber}");
+        var verificationUrl = $"{Request.Scheme}://{Request.Host}/api/reservations/verify-voucher/{reservation.Code}";
+        var qrCodeBytes = _qrCodeService.GenerateQrCodePng(verificationUrl);
         _ = _emailService.SendReservationVoucherAsync(reservation, guest.Email, qrCodeBytes);
 
         var resultDto = new ReservationDto
@@ -441,6 +445,7 @@ public class ReservationsController : ControllerBase
         return CreatedAtAction(nameof(GetReservation), new { id = reservation.ReservationId }, resultDto);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("{id}/check-in")]
     public async Task<IActionResult> CheckIn(int id)
     {
@@ -501,6 +506,7 @@ public class ReservationsController : ControllerBase
         return Ok(new { message = "Check-In completado exitosamente. La habitación ahora está Ocupada." });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("{id}/check-out")]
     public async Task<IActionResult> CheckOut(int id)
     {
@@ -557,6 +563,7 @@ public class ReservationsController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("{id}/state")]
     public async Task<IActionResult> ChangeState(int id, [FromBody] ChangeReservationStateDto dto)
     {
@@ -594,6 +601,7 @@ public class ReservationsController : ControllerBase
         return Ok(new { message = $"Estado de la reserva actualizado a '{dto.NewStatus}'.", status = r.Status });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> CancelReservation(int id, [FromBody] CancelReservationDto dto)
     {
@@ -648,6 +656,7 @@ public class ReservationsController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("{id}/voucher")]
     public async Task<IActionResult> GetVoucher(int id)
     {
@@ -660,10 +669,182 @@ public class ReservationsController : ControllerBase
 
         if (r == null) return NotFound(new { message = "Reserva no encontrada." });
 
-        var qrBytes = _qrCodeService.GenerateQrCodePng($"RES:{r.Code}|HOTEL:{r.Hotel.Name}|GUEST:{r.Guest.FullName}");
+        var verificationUrl = $"{Request.Scheme}://{Request.Host}/api/reservations/verify-voucher/{r.Code}";
+        var qrBytes = _qrCodeService.GenerateQrCodePng(verificationUrl);
 
         return Ok(new
         {
+            code = r.Code,
+            reservationCode = r.Code,
+            voucherCode = $"VCH-{r.Code}",
+            hotelName = r.Hotel.Name,
+            hotelCity = r.Hotel.City,
+            guestName = r.Guest.FullName,
+            roomNumber = r.Room.RoomNumber,
+            roomTypeName = r.Room.RoomType.Name,
+            checkInDate = r.CheckInDate.ToString("yyyy-MM-dd"),
+            checkOutDate = r.CheckOutDate.ToString("yyyy-MM-dd"),
+            status = r.Status.ToString(),
+            totalAmount = r.TotalAmount,
+            verificationUrl = verificationUrl,
+            issuedAt = r.CreatedAt,
+            qrCodeBase64 = Convert.ToBase64String(qrBytes)
+        });
+    }
+
+    // Defecto 2 / RF-43: Verificación pública y funcional de vouchers mediante código QR
+    [AllowAnonymous]
+    [HttpGet("verify-voucher/{code}")]
+    public async Task<IActionResult> VerifyVoucher(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return BadRequest(new { message = "Código de voucher no suministrado." });
+        }
+
+        var normalizedCode = code.Trim().ToUpperInvariant();
+        if (normalizedCode.StartsWith("VCH-"))
+        {
+            normalizedCode = normalizedCode.Substring(4);
+        }
+
+        var r = await _dbContext.Reservations
+            .IgnoreQueryFilters()
+            .Include(r => r.Hotel)
+            .Include(r => r.Room)
+                .ThenInclude(rm => rm.RoomType)
+            .Include(r => r.Guest)
+            .FirstOrDefaultAsync(r => r.Code.ToUpper() == normalizedCode);
+
+        bool isHtml = Request.Headers.Accept.Any(a => a != null && a.Contains("text/html"));
+
+        if (r == null)
+        {
+            if (isHtml)
+            {
+                var notFoundHtml = @"<!DOCTYPE html>
+<html lang='es'>
+<head>
+    <meta charset='utf-8'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1'/>
+    <title>Comprobante No Válido | CONTINENTALIA SAS</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0A192F; color: #F8FAFC; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .card { background: #0F233D; border: 1px solid #1E3E62; border-radius: 20px; padding: 32px; max-width: 440px; width: 100%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .icon { font-size: 48px; color: #EF4444; margin-bottom: 16px; }
+        h1 { font-size: 20px; margin: 0 0 10px 0; color: #FFFFFF; }
+        p { color: #94A3B8; font-size: 14px; line-height: 1.5; margin: 0; }
+        .badge { display: inline-block; margin-top: 20px; padding: 6px 14px; background: rgba(239, 68, 68, 0.15); color: #F87171; border-radius: 9999px; font-weight: 700; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class='card'>
+        <div class='icon'>&#10006;</div>
+        <h1>Comprobante No Válido</h1>
+        <p>El código de voucher o reserva consultado no existe en los registros de CONTINENTALIA SAS o no es válido.</p>
+        <span class='badge'>CÓDIGO NO ENCONTRADO</span>
+    </div>
+</body>
+</html>";
+                return Content(notFoundHtml, "text/html; charset=utf-8");
+            }
+
+            return NotFound(new
+            {
+                isValid = false,
+                message = "El comprobante o voucher especificado no existe o no es válido."
+            });
+        }
+
+        string statusText = r.Status.ToString();
+        bool isCancelled = r.Status == ReservationStatus.Anulada || r.Status == ReservationStatus.NoShow;
+        string validityNote = isCancelled
+            ? "ATENCIÓN: Esta reserva se encuentra ANULADA o NO PRESENTADA (NO-SHOW)."
+            : "Comprobante emitido legítimamente por la plataforma de CONTINENTALIA SAS.";
+
+        string statusBadgeColor = r.Status switch
+        {
+            ReservationStatus.Confirmada => "#2563EB",
+            ReservationStatus.CheckIn => "#10B981",
+            ReservationStatus.CheckOut => "#475569",
+            ReservationStatus.Liquidada => "#059669",
+            ReservationStatus.Anulada => "#DC2626",
+            ReservationStatus.NoShow => "#B91C1C",
+            _ => "#D97706"
+        };
+
+        if (isHtml)
+        {
+            var html = $@"<!DOCTYPE html>
+<html lang='es'>
+<head>
+    <meta charset='utf-8'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1'/>
+    <title>Verificación de Comprobante - {r.Code} | CONTINENTALIA SAS</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0A192F; color: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }}
+        .card {{ background: #FFFFFF; border-radius: 24px; padding: 32px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border-top: 6px solid #D4AF37; }}
+        .brand-header {{ text-align: center; margin-bottom: 24px; border-bottom: 1px solid #E2E8F0; padding-bottom: 16px; }}
+        .brand-title {{ font-size: 18px; font-weight: 800; color: #17365D; letter-spacing: 0.05em; }}
+        .brand-subtitle {{ font-size: 11px; font-weight: 700; color: #D4AF37; text-transform: uppercase; letter-spacing: 0.1em; }}
+        .hotel-name {{ font-size: 16px; font-weight: 700; color: #1E293B; margin-top: 8px; }}
+        .hotel-city {{ font-size: 13px; color: #64748B; }}
+        .voucher-badge {{ display: inline-block; padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #FFFFFF; background: {statusBadgeColor}; margin: 12px 0 20px; }}
+        .data-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; text-align: left; }}
+        .data-item {{ background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; }}
+        .data-label {{ font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 4px; }}
+        .data-value {{ font-size: 13px; font-weight: 700; color: #0F172A; font-family: monospace; }}
+        .guest-item {{ grid-column: span 2; }}
+        .warning-box {{ background: {(isCancelled ? "#FEF2F2" : "#ECFDF5")}; border: 1px solid {(isCancelled ? "#FECDD3" : "#A7F3D0")}; color: {(isCancelled ? "#991B1B" : "#065F46")}; padding: 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; margin-top: 16px; text-align: center; font-weight: 600; }}
+        .footer {{ text-align: center; font-size: 11px; color: #94A3B8; margin-top: 24px; }}
+    </style>
+</head>
+<body>
+    <div class='card'>
+        <div class='brand-header'>
+            <div class='brand-title'>CONTINENTALIA SAS</div>
+            <div class='brand-subtitle'>Comprobante Oficial de Reserva</div>
+            <div class='hotel-name'>{r.Hotel.Name}</div>
+            <div class='hotel-city'>{r.Hotel.City} — {r.Hotel.Address}</div>
+            <div><span class='voucher-badge'>ESTADO: {statusText}</span></div>
+        </div>
+        <div class='data-grid'>
+            <div class='data-item guest-item'>
+                <div class='data-label'>Huésped Titular</div>
+                <div class='data-value' style='font-family: inherit;'>{r.Guest.FullName}</div>
+            </div>
+            <div class='data-item'>
+                <div class='data-label'>No. Comprobante</div>
+                <div class='data-value'>VCH-{r.Code}</div>
+            </div>
+            <div class='data-item'>
+                <div class='data-label'>Código Reserva</div>
+                <div class='data-value'>{r.Code}</div>
+            </div>
+            <div class='data-item'>
+                <div class='data-label'>Habitación</div>
+                <div class='data-value'>{r.Room.RoomNumber} ({r.Room.RoomType.Name})</div>
+            </div>
+            <div class='data-item'>
+                <div class='data-label'>Estadía</div>
+                <div class='data-value'>{r.CheckInDate:yyyy-MM-dd} al {r.CheckOutDate:yyyy-MM-dd}</div>
+            </div>
+        </div>
+        <div class='warning-box'>{validityNote}</div>
+        <div class='footer'>
+            Verificado en tiempo real con la base de datos de CONTINENTALIA SAS.<br/>
+            Fecha de emisión: {r.CreatedAt:yyyy-MM-dd HH:mm} UTC
+        </div>
+    </div>
+</body>
+</html>";
+            return Content(html, "text/html; charset=utf-8");
+        }
+
+        return Ok(new
+        {
+            isValid = !isCancelled,
+            voucherCode = $"VCH-{r.Code}",
             reservationCode = r.Code,
             hotelName = r.Hotel.Name,
             hotelCity = r.Hotel.City,
@@ -672,8 +853,10 @@ public class ReservationsController : ControllerBase
             roomTypeName = r.Room.RoomType.Name,
             checkInDate = r.CheckInDate.ToString("yyyy-MM-dd"),
             checkOutDate = r.CheckOutDate.ToString("yyyy-MM-dd"),
-            totalAmount = r.TotalAmount,
-            qrCodeBase64 = Convert.ToBase64String(qrBytes)
+            status = statusText,
+            isCancelled = isCancelled,
+            issuedAt = r.CreatedAt,
+            validityMessage = validityNote
         });
     }
 }

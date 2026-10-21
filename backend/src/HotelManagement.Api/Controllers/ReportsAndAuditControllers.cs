@@ -16,7 +16,7 @@ namespace HotelManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.Socio},{UserRole.Auditor},{UserRole.AdminSede}")]
 public class ReportsController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
@@ -183,16 +183,18 @@ public class ReportsController : ControllerBase
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.Auditor},{UserRole.AdminSede}")]
 public class AuditController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AuditController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public AuditController(IHotelDbContext dbContext, ITenantContext tenantContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
     [HttpGet]
@@ -203,7 +205,13 @@ public class AuditController : ControllerBase
             .Include(a => a.User)
             .AsQueryable();
 
-        if (filter.HotelId.HasValue && filter.HotelId.Value > 0)
+        // RBAC CONTINENTALIA SAS: AdminSede solo puede consultar la auditoría de su sede asignada
+        if (_currentUserService.Role == UserRole.AdminSede)
+        {
+            int localHotelId = _tenantContext.CurrentHotelId ?? 1;
+            query = query.Where(a => a.HotelId == localHotelId);
+        }
+        else if (filter.HotelId.HasValue && filter.HotelId.Value > 0)
         {
             query = query.Where(a => a.HotelId == filter.HotelId.Value);
         }
@@ -251,11 +259,13 @@ public class UsersController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITenantContext _tenantContext;
 
-    public UsersController(IHotelDbContext dbContext, IPasswordHasher passwordHasher)
+    public UsersController(IHotelDbContext dbContext, IPasswordHasher passwordHasher, ITenantContext tenantContext)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _tenantContext = tenantContext;
     }
 
     [HttpGet]
@@ -291,6 +301,34 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserInfoDto>> CreateUser([FromBody] CreateUserDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Email) ||
+            string.IsNullOrWhiteSpace(dto.Password) ||
+            string.IsNullOrWhiteSpace(dto.FullName) ||
+            string.IsNullOrWhiteSpace(dto.Role))
+        {
+            return BadRequest(new { message = "Todos los campos obligatorios deben ser proporcionados (Nombre, Correo, Contraseña, Rol)." });
+        }
+
+        if (dto.Password.Length < 6)
+        {
+            return BadRequest(new { message = "La contraseña debe tener al menos 6 caracteres." });
+        }
+
+        var validRoles = new[]
+        {
+            UserRole.AdminGlobal,
+            UserRole.AdminSede,
+            UserRole.Recepcionista,
+            UserRole.Housekeeping,
+            UserRole.Auditor,
+            UserRole.Socio
+        };
+
+        if (!validRoles.Contains(dto.Role.Trim()))
+        {
+            return BadRequest(new { message = $"El rol '{dto.Role}' no es válido en el sistema CONTINENTALIA SAS." });
+        }
+
         bool exists = await _dbContext.Users.AnyAsync(u => u.Email == dto.Email.Trim().ToLowerInvariant());
         if (exists) return BadRequest(new { message = "Ya existe un usuario con este correo electrónico." });
 
@@ -306,12 +344,31 @@ public class UsersController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
-        foreach (var hId in dto.AssignedHotelIds)
+        if (dto.AssignedHotelIds != null && dto.AssignedHotelIds.Count > 0)
+        {
+            foreach (var hId in dto.AssignedHotelIds)
+            {
+                user.HotelUsers.Add(new HotelUser
+                {
+                    HotelId = hId,
+                    IsDefault = user.HotelUsers.Count == 0
+                });
+            }
+        }
+        else if (_tenantContext.CurrentHotelId.HasValue)
         {
             user.HotelUsers.Add(new HotelUser
             {
-                HotelId = hId,
-                IsDefault = user.HotelUsers.Count == 0
+                HotelId = _tenantContext.CurrentHotelId.Value,
+                IsDefault = true
+            });
+        }
+        else
+        {
+            user.HotelUsers.Add(new HotelUser
+            {
+                HotelId = 1,
+                IsDefault = true
             });
         }
 

@@ -91,3 +91,4 @@ C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Api\obj\Debug
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Api\obj\Debug\net9.0\HotelManagement.Api.pdb
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Api\obj\Debug\net9.0\HotelManagement.Api.genruntimeconfig.cache
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Api\obj\Debug\net9.0\ref\HotelManagement.Api.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Api\obj\Debug\net9.0\HotelManagement.Api.sourcelink.json

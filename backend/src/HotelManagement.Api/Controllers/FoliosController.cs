@@ -32,6 +32,7 @@ public class FoliosController : ControllerBase
         _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<FolioDto>> GetFolio(int id)
     {
@@ -95,6 +96,7 @@ public class FoliosController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("{id}/charges")]
     public async Task<ActionResult<FolioChargeDto>> AddCharge(int id, [FromBody] AddChargeDto dto)
     {
@@ -163,6 +165,7 @@ public class FoliosController : ControllerBase
     }
 
     // RF-36 / HU-17: Los cargos no se editan directamente: corrección mediante anulación con motivo y contra-asiento auditado
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("charges/{chargeId}/annul")]
     public async Task<IActionResult> AnnulCharge(int chargeId, [FromBody] AnnulChargeDto dto)
     {
@@ -219,6 +222,7 @@ public class FoliosController : ControllerBase
     }
 
     // RF-38, RF-39 / HU-18: Registro de pagos y abonos con idempotencia y emisión de recibo
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("{id}/payments")]
     public async Task<ActionResult<FolioPaymentDto>> AddPayment(int id, [FromBody] AddPaymentDto dto)
     {

@@ -14,27 +14,34 @@ namespace HotelManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.Socio},{UserRole.Auditor},{UserRole.AdminSede}")]
 public class DashboardController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public DashboardController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public DashboardController(IHotelDbContext dbContext, ITenantContext tenantContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
     [HttpGet("metrics")]
     public async Task<ActionResult<DashboardMetricsDto>> GetMetrics([FromQuery] int? hotelId)
     {
-        // Si hotelId es null, verificar si el usuario es AdminGlobal o Socio para consolidado
+        // Si hotelId es null o 0, verificar si el usuario tiene permiso para consolidado
         int? filterHotelId = hotelId ?? _tenantContext.CurrentHotelId;
 
-        // Si se solicita consolidado de cadena
+        // Matriz de Permisos CONTINENTALIA SAS:
+        // AdminSede tiene 'Sin acceso' a Dashboard consolidado de cadena. Solo puede consultar su sede.
         if (!filterHotelId.HasValue || filterHotelId.Value == 0)
         {
+            if (_currentUserService.Role == UserRole.AdminSede)
+            {
+                return StatusCode(403, new { message = "Acceso restringido: El rol AdminSede no tiene autorización para consultar el dashboard consolidado de toda la cadena hotelera. Debe especificar su sede asignada." });
+            }
             _tenantContext.IsGlobalBypass = true;
         }
 

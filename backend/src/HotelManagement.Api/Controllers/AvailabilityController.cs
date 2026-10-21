@@ -26,6 +26,7 @@ public class AvailabilityController : ControllerBase
         _tenantContext = tenantContext;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("search")]
     public async Task<ActionResult<IEnumerable<AvailableRoomResponseDto>>> SearchAvailability([FromBody] AvailabilitySearchRequestDto dto)
     {
@@ -114,6 +115,7 @@ public class AvailabilityController : ControllerBase
     }
 
     // RF-20, RF-21 / HU-09: Consulta de disponibilidad inter-sedes protegida
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("cross-hotel")]
     public async Task<ActionResult<IEnumerable<CrossHotelAvailabilityResponseDto>>> SearchCrossHotelAvailability([FromBody] AvailabilitySearchRequestDto dto)
     {
@@ -184,6 +186,7 @@ public class AvailabilityController : ControllerBase
     }
 
     // RF-29 / HU-14: Calendario de ocupación de 14 días
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("calendar")]
     public async Task<ActionResult<OccupancyCalendarDto>> GetOccupancyCalendar([FromQuery] DateTime? startDate)
     {
@@ -222,7 +225,7 @@ public class AvailabilityController : ControllerBase
 
             foreach (var day in days)
             {
-                var matchingRes = reservations.FirstOrDefault(r => r.RoomId == room.RoomId && day >= r.CheckInDate && day < r.CheckOutDate);
+                var matchingRes = reservations.FirstOrDefault(r => r.RoomId == room.RoomId && day.Date >= r.CheckInDate.Date && day.Date < r.CheckOutDate.Date);
 
                 if (room.OperationalStatus == RoomOperationalStatus.Mantenimiento)
                 {

@@ -29,4 +29,18 @@ public class CurrentUserService : ICurrentUserService
     public string? Role => User?.FindFirst(ClaimTypes.Role)?.Value;
     public string? FullName => User?.FindFirst(ClaimTypes.Name)?.Value;
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
+    public string? IpAddress
+    {
+        get
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null) return null;
+            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwarded) && !string.IsNullOrWhiteSpace(forwarded))
+            {
+                var ips = forwarded.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (ips.Length > 0) return ips[0];
+            }
+            return httpContext.Connection.RemoteIpAddress?.ToString();
+        }
+    }
 }

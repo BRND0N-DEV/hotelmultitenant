@@ -31,6 +31,7 @@ public class CashShiftController : ControllerBase
         _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("current")]
     public async Task<ActionResult<CashShiftDto>> GetCurrentShift()
     {
@@ -63,6 +64,7 @@ public class CashShiftController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("open")]
     public async Task<ActionResult<CashShiftDto>> OpenShift([FromBody] OpenShiftDto dto)
     {
@@ -111,6 +113,7 @@ public class CashShiftController : ControllerBase
     }
 
     // RF-42 / HU-20: Cierre de caja por turno con congelamiento de totales
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPost("close")]
     public async Task<IActionResult> CloseShift([FromBody] CloseShiftDto dto)
     {
@@ -155,6 +158,7 @@ public class CashShiftController : ControllerBase
         });
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("history")]
     public async Task<ActionResult<IEnumerable<CashShiftDto>>> GetShiftHistory([FromQuery] int limit = 10)
     {

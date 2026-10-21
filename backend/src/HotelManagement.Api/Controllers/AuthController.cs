@@ -67,7 +67,10 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = $"Contraseña incorrecta. Intentos restantes antes de bloqueo: {remaining}" });
         }
 
-        user.ResetLoginLockout();
+        if (user.FailedLoginAttempts > 0 || user.LockoutEnd.HasValue)
+        {
+            user.ResetLoginLockout();
+        }
 
         // Determinar sede activa
         int? activeHotelId = dto.PreferredHotelId;
