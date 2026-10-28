@@ -119,3 +119,4 @@ C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.UnitTests\b
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.UnitTests\bin\Debug\net9.0\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.UnitTests\bin\Debug\net9.0\Microsoft.Extensions.Options.dll
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.UnitTests\bin\Debug\net9.0\Microsoft.Extensions.Primitives.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.UnitTests\obj\Debug\net9.0\HotelManagement.UnitTests.sourcelink.json

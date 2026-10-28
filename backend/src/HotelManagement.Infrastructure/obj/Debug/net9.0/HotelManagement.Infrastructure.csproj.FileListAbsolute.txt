@@ -17,3 +17,4 @@ C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Infrastructur
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Infrastructure\obj\Debug\net9.0\HotelManagement.Infrastructure.pdb
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Infrastructure\obj\Debug\net9.0\HotelManagement.Infrastructure.genruntimeconfig.cache
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Infrastructure\obj\Debug\net9.0\ref\HotelManagement.Infrastructure.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Infrastructure\obj\Debug\net9.0\HotelManagement.Infrastructure.sourcelink.json

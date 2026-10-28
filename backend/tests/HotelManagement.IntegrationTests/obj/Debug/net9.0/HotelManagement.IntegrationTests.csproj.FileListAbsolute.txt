@@ -498,3 +498,4 @@ C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.Integration
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.IntegrationTests\obj\Debug\net9.0\HotelManagement.IntegrationTests.pdb
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.IntegrationTests\obj\Debug\net9.0\HotelManagement.IntegrationTests.genruntimeconfig.cache
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.IntegrationTests\obj\Debug\net9.0\ref\HotelManagement.IntegrationTests.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.IntegrationTests\obj\Debug\net9.0\HotelManagement.IntegrationTests.sourcelink.json

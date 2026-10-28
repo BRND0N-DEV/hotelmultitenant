@@ -460,10 +460,12 @@ public class ReservationsController : ControllerBase
         // RF-31: Impedir check-in si la habitación no está Limpia
         if (r.Room.CleaningStatus != RoomCleaningStatus.Limpia || r.Room.OperationalStatus != RoomOperationalStatus.Disponible)
         {
-            // Buscar habitaciones alternativas del mismo tipo que sí estén limpias
+            // Buscar habitaciones alternativas del mismo tipo que sí estén limpias en la misma sede
             var availableAlternative = await _dbContext.Rooms
-                .Where(rm => rm.RoomTypeId == r.Room.RoomTypeId &&
+                .Where(rm => rm.HotelId == r.Room.HotelId &&
+                             rm.RoomTypeId == r.Room.RoomTypeId &&
                              rm.RoomId != r.RoomId &&
+                             rm.IsActive &&
                              rm.CleaningStatus == RoomCleaningStatus.Limpia &&
                              rm.OperationalStatus == RoomOperationalStatus.Disponible)
                 .Select(rm => rm.RoomNumber)

@@ -21,15 +21,18 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public HotelApiIntegrationTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
     private async Task<string> AuthenticateAsync(string email, string password, int hotelId)
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequestDto
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequestDto
         {
             Email = email,
             Password = password,
@@ -109,8 +112,6 @@ public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactor
     public async Task CrossHotelAvailability_ShouldReturnSummariesWithoutSensitiveData()
     {
         var token = await AuthenticateAsync("recepcion.bogota@hotelchain.com", "Admin123*!", 1);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
         var searchDto = new AvailabilitySearchRequestDto
         {
             CheckInDate = DateTime.UtcNow.Date.AddDays(10),
@@ -118,8 +119,14 @@ public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactor
             Adults = 2
         };
 
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/availability/cross-hotel")
+        {
+            Content = JsonContent.Create(searchDto)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
         // Act
-        var response = await _client.PostAsJsonAsync("/api/availability/cross-hotel", searchDto);
+        var response = await _client.SendAsync(request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -196,4 +203,82 @@ public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactor
         res2!.Code.Should().Be(res1!.Code);
         res2.ReservationId.Should().Be(res1.ReservationId);
     }
+
+    [Fact]
+    public async Task VerifyVoucher_PublicEndpoint_ShouldReturnHtmlWithoutAuthentication()
+    {
+        // 1. Obtener una reserva existente del hotel
+        var token = await AuthenticateAsync("recepcion.bogota@hotelchain.com", "Admin123*!", 1);
+        var resReq = new HttpRequestMessage(HttpMethod.Get, "/api/reservations");
+        resReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        resReq.Headers.Add("X-Hotel-Id", "1");
+        var resResp = await _client.SendAsync(resReq);
+        resResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await resResp.Content.ReadFromJsonAsync<List<ReservationDto>>();
+        list.Should().NotBeNull();
+        list!.Should().NotBeEmpty();
+
+        var reservation = list!.First();
+
+        // 2. Probar el endpoint público de verificación en formato JSON
+        var unauthenticatedClient = _factory.CreateClient();
+        var jsonResp = await unauthenticatedClient.GetAsync($"/api/reservations/verify-voucher/{reservation.Code}");
+        jsonResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonContent = await jsonResp.Content.ReadAsStringAsync();
+        jsonContent.Should().Contain(reservation.Code);
+        jsonContent.Should().Contain(reservation.HotelName);
+        jsonContent.Should().NotContain("PasswordHash");
+        jsonContent.Should().NotContain("RefreshToken");
+
+        // 3. Probar el endpoint público de verificación solicitando HTML (como navegador móvil al escanear el QR)
+        var htmlReq = new HttpRequestMessage(HttpMethod.Get, $"/api/reservations/verify-voucher/{reservation.Code}");
+        htmlReq.Headers.Add("Accept", "text/html");
+        var htmlResp = await unauthenticatedClient.SendAsync(htmlReq);
+        htmlResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var htmlContent = await htmlResp.Content.ReadAsStringAsync();
+        htmlContent.Should().Contain("Comprobante Oficial de Reserva");
+        htmlContent.Should().Contain(reservation.Code);
+        htmlContent.Should().Contain(reservation.HotelName);
+        htmlContent.Should().NotContain("PasswordHash");
+        htmlContent.Should().NotContain("RefreshToken");
+    }
+
+    [Fact]
+    public async Task SwitchHotel_AdminGlobal_ShouldSwitchActiveHotel()
+    {
+        var token = await AuthenticateAsync("admin@hotelchain.com", "Admin123*!", 1);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/switch-hotel")
+        {
+            Content = JsonContent.Create(2)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: $"Response was: {content}");
+        
+        var result = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+        result.Should().NotBeNull();
+        result!.User.ActiveHotelId.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task SwitchHotel_WithStringOrObjectPayload_TestingWhatHappens()
+    {
+        var token = await AuthenticateAsync("admin@hotelchain.com", "Admin123*!", 1);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/switch-hotel")
+        {
+            Content = new StringContent("\"2\"", System.Text.Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: $"Response for string \"2\" was: {response.StatusCode} - {content}");
+    }
 }
+
+
+

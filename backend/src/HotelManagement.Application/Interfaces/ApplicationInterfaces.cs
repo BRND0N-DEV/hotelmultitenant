@@ -49,6 +49,7 @@ public interface ICurrentUserService
     string? Role { get; }
     string? FullName { get; }
     bool IsAuthenticated { get; }
+    string? IpAddress { get; }
 }
 
 public interface IPasswordHasher

@@ -13,3 +13,4 @@ C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\o
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\refint\HotelManagement.Application.dll
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.pdb
 C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\ref\HotelManagement.Application.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\src\HotelManagement.Application\obj\Debug\net9.0\HotelManagement.Application.sourcelink.json

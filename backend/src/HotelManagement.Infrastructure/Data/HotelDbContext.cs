@@ -330,15 +330,24 @@ public class HotelDbContext : DbContext, IHotelDbContext
                 string? oldValues = null;
                 string? newValues = null;
 
+                var sensitiveKeys = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "PasswordHash", "Password", "Token", "RefreshToken", "SecurityStamp"
+                };
+
                 if (entry.State == EntityState.Modified || entry.State == EntityState.Deleted)
                 {
-                    var original = entry.OriginalValues.Properties.ToDictionary(p => p.Name, p => entry.OriginalValues[p]);
+                    var original = entry.OriginalValues.Properties.ToDictionary(
+                        p => p.Name,
+                        p => sensitiveKeys.Contains(p.Name) ? (object)"[REDACTED]" : entry.OriginalValues[p]);
                     oldValues = JsonSerializer.Serialize(original);
                 }
 
                 if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
                 {
-                    var current = entry.CurrentValues.Properties.ToDictionary(p => p.Name, p => entry.CurrentValues[p]);
+                    var current = entry.CurrentValues.Properties.ToDictionary(
+                        p => p.Name,
+                        p => sensitiveKeys.Contains(p.Name) ? (object)"[REDACTED]" : entry.CurrentValues[p]);
                     newValues = JsonSerializer.Serialize(current);
                 }
 
@@ -351,7 +360,8 @@ public class HotelDbContext : DbContext, IHotelDbContext
                     EntityName = entityName,
                     OldValues = oldValues,
                     NewValues = newValues,
-                    Timestamp = DateTime.UtcNow
+                    Timestamp = DateTime.UtcNow,
+                    IpAddress = _currentUserService.IpAddress ?? "127.0.0.1"
                 });
             }
         }

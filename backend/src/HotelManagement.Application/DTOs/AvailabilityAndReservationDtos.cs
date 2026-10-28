@@ -92,6 +92,16 @@ public class CreateGuestDto
     public string? IpAddress { get; set; }
 }
 
+public class UpdateGuestDto
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Nationality { get; set; } = "Colombia";
+    public bool? AcceptDataConsent { get; set; }
+}
+
 // --- RESERVATION DTOs ---
 public class CreateReservationDto
 {

@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
@@ -85,9 +88,25 @@ public class AuthController : ControllerBase
         var refreshToken = _tokenService.GenerateRefreshToken(user.UserId);
 
         _dbContext.RefreshTokens.Add(refreshToken);
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (_dbContext is DbContext db)
+            {
+                await db.Entry(user).ReloadAsync();
+                await _dbContext.SaveChangesAsync();
+            }
+            else
+            {
+                throw;
+            }
+        }
 
-        var activeHotel = user.HotelUsers.FirstOrDefault(hu => hu.HotelId == activeHotelId)?.Hotel;
+        var activeHotel = await _dbContext.Hotels.FirstOrDefaultAsync(h => h.HotelId == activeHotelId);
+        var assignedHotels = await GetUserAssignedHotelsAsync(user, activeHotelId);
 
         var response = new LoginResponseDto
         {
@@ -104,19 +123,13 @@ public class AuthController : ControllerBase
                 Shift = user.Shift,
                 ActiveHotelId = activeHotelId,
                 ActiveHotelName = activeHotel?.Name,
-                AssignedHotels = user.HotelUsers.Select(hu => new HotelAssignmentDto
-                {
-                    HotelId = hu.HotelId,
-                    Name = hu.Hotel.Name,
-                    City = hu.Hotel.City,
-                    Code = hu.Hotel.Code,
-                    IsDefault = hu.IsDefault
-                }).ToList()
+                AssignedHotels = assignedHotels
             }
         };
 
         return Ok(response);
     }
+
 
     [HttpPost("refresh-token")]
     public async Task<ActionResult<LoginResponseDto>> RefreshToken([FromBody] RefreshTokenRequestDto dto)
@@ -213,7 +226,12 @@ public class AuthController : ControllerBase
 
         if (user == null) return NotFound();
 
-        var activeHotel = user.HotelUsers.FirstOrDefault(hu => hu.HotelId == _tenantContext.CurrentHotelId)?.Hotel;
+        int? activeHotelId = _tenantContext.CurrentHotelId;
+        var activeHotel = activeHotelId.HasValue 
+            ? await _dbContext.Hotels.FirstOrDefaultAsync(h => h.HotelId == activeHotelId.Value)
+            : null;
+
+        var assignedHotels = await GetUserAssignedHotelsAsync(user, activeHotelId);
 
         return Ok(new UserInfoDto
         {
@@ -223,40 +241,71 @@ public class AuthController : ControllerBase
             Role = user.Role,
             Department = user.Department,
             Shift = user.Shift,
-            ActiveHotelId = _tenantContext.CurrentHotelId,
+            ActiveHotelId = activeHotelId,
             ActiveHotelName = activeHotel?.Name,
-            AssignedHotels = user.HotelUsers.Select(hu => new HotelAssignmentDto
-            {
-                HotelId = hu.HotelId,
-                Name = hu.Hotel.Name,
-                City = hu.Hotel.City,
-                Code = hu.Hotel.Code,
-                IsDefault = hu.IsDefault
-            }).ToList()
+            AssignedHotels = assignedHotels
         });
     }
 
     [Authorize]
     [HttpPost("switch-hotel")]
-    public async Task<ActionResult<LoginResponseDto>> SwitchHotelContext([FromBody] int hotelId)
+    public async Task<ActionResult<LoginResponseDto>> SwitchHotelContext([FromBody] JsonElement body)
     {
         if (!_currentUserService.UserId.HasValue) return Unauthorized();
+
+        int hotelId = 0;
+        if (body.ValueKind == JsonValueKind.Number && body.TryGetInt32(out var numId))
+        {
+            hotelId = numId;
+        }
+        else if (body.ValueKind == JsonValueKind.Object)
+        {
+            if (body.TryGetProperty("hotelId", out var prop) && prop.TryGetInt32(out var parsedId))
+            {
+                hotelId = parsedId;
+            }
+            else if (body.TryGetProperty("HotelId", out var propUpper) && propUpper.TryGetInt32(out var parsedUpper))
+            {
+                hotelId = parsedUpper;
+            }
+        }
+        else if (body.ValueKind == JsonValueKind.String && int.TryParse(body.GetString(), out var strId))
+        {
+            hotelId = strId;
+        }
+
+        if (hotelId <= 0)
+        {
+            return BadRequest(new { message = "Identificador de sede inválido." });
+        }
 
         var user = await _dbContext.Users
             .Include(u => u.HotelUsers)
                 .ThenInclude(hu => hu.Hotel)
             .FirstOrDefaultAsync(u => u.UserId == _currentUserService.UserId.Value);
 
-        if (user == null) return NotFound();
+        if (user == null) return NotFound(new { message = "Usuario no encontrado." });
 
-        bool hasAccess = user.Role == UserRole.AdminGlobal ||
-                         user.Role == UserRole.Socio ||
-                         user.Role == UserRole.Auditor ||
-                         user.HotelUsers.Any(hu => hu.HotelId == hotelId);
-
-        if (!hasAccess)
+        var hotel = await _dbContext.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId);
+        if (hotel == null)
         {
-            return Forbid("No tiene autorización para operar en la sede seleccionada.");
+            return NotFound(new { message = $"La sede con identificador {hotelId} no existe en el sistema." });
+        }
+
+        if (!hotel.IsActive)
+        {
+            return BadRequest(new { message = $"La sede '{hotel.Name}' se encuentra inactiva y no admite conmutación operativa." });
+        }
+
+        bool isGlobal = user.Role == UserRole.AdminGlobal ||
+                        user.Role == UserRole.Socio ||
+                        user.Role == UserRole.Auditor;
+
+        bool isAssigned = user.HotelUsers.Any(hu => hu.HotelId == hotelId);
+
+        if (!isGlobal && !isAssigned)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "No tiene autorización para operar en la sede seleccionada. Acceso restringido al personal asignado." });
         }
 
         var newAccessToken = _tokenService.GenerateAccessToken(user, hotelId);
@@ -264,7 +313,7 @@ public class AuthController : ControllerBase
         _dbContext.RefreshTokens.Add(newRefreshToken);
         await _dbContext.SaveChangesAsync();
 
-        var hotel = await _dbContext.Hotels.FindAsync(hotelId);
+        var assignedHotels = await GetUserAssignedHotelsAsync(user, hotelId);
 
         return Ok(new LoginResponseDto
         {
@@ -280,16 +329,43 @@ public class AuthController : ControllerBase
                 Department = user.Department,
                 Shift = user.Shift,
                 ActiveHotelId = hotelId,
-                ActiveHotelName = hotel?.Name,
-                AssignedHotels = user.HotelUsers.Select(hu => new HotelAssignmentDto
-                {
-                    HotelId = hu.HotelId,
-                    Name = hu.Hotel.Name,
-                    City = hu.Hotel.City,
-                    Code = hu.Hotel.Code,
-                    IsDefault = hu.IsDefault
-                }).ToList()
+                ActiveHotelName = hotel.Name,
+                AssignedHotels = assignedHotels
             }
         });
     }
+
+    private async Task<List<HotelAssignmentDto>> GetUserAssignedHotelsAsync(User user, int? activeHotelId)
+    {
+        bool isGlobal = user.Role == UserRole.AdminGlobal || user.Role == UserRole.Socio || user.Role == UserRole.Auditor;
+        if (isGlobal)
+        {
+            return await _dbContext.Hotels
+                .Where(h => h.IsActive)
+                .OrderBy(h => h.HotelId)
+                .Select(h => new HotelAssignmentDto
+                {
+                    HotelId = h.HotelId,
+                    Name = h.Name,
+                    City = h.City,
+                    Code = h.Code,
+                    IsDefault = h.HotelId == activeHotelId
+                })
+                .ToListAsync();
+        }
+
+        return user.HotelUsers
+            .Where(hu => hu.Hotel.IsActive)
+            .OrderBy(hu => hu.HotelId)
+            .Select(hu => new HotelAssignmentDto
+            {
+                HotelId = hu.HotelId,
+                Name = hu.Hotel.Name,
+                City = hu.Hotel.City,
+                Code = hu.Hotel.Code,
+                IsDefault = hu.IsDefault || hu.HotelId == activeHotelId
+            })
+            .ToList();
+    }
 }
+

@@ -76,3 +76,21 @@ El enfoque **Shift-Left** incorpora la verificación de calidad desde la fase de
    - Validaciones reactivas en formularios.
    - Interceptor de autenticación y manejo de errores.
    - Flujo responsive de recepción y housekeeping táctil.
+
+---
+
+## 3. Módulo de Matriz de Permisos (RBAC), Autorización y Trazabilidad de Datos
+
+En cumplimiento de los requerimientos de auditoría de seguridad y gobernanza de datos para CONTINENTALIA SAS, se ha incorporado el módulo integral de verificación de control de acceso y persistencia.
+
+El detalle técnico exhaustivo, las matrices de pruebas, la trazabilidad de persistencia de extremo a extremo (Frontend -> API -> SQL Server), el inventario de datos semilla y las cuatro (4) decisiones de negocio para la Junta Directiva se encuentran documentados formalmente en:
+- [Auditoría Integral de Permisos y Trazabilidad de Datos](file:///c:/Users/USER/Desktop/hotelmultitenant/docs/auditoria_permisos_fuentes_datos.md)
+
+---
+
+## 4. Auditoría Integral de Defectos y Verificación QA Funcional
+
+Para consultar el diagnóstico de causa raíz, las modificaciones efectuadas en cada capa arquitectónica, las 71 pruebas automatizadas y las evidencias de verificación en caliente de los 8 defectos funcionales corregidos, remitirse a:
+- [Informe de Auditoría QA Funcional y Corrección Integral de Defectos](file:///c:/Users/USER/Desktop/hotelmultitenant/docs/informe_auditoria_qa_defectos.md)
+
+

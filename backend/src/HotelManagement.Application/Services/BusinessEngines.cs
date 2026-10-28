@@ -97,9 +97,9 @@ public static class ReservationStateMachine
 {
     private static readonly Dictionary<ReservationStatus, HashSet<ReservationStatus>> AllowedTransitions = new()
     {
-        [ReservationStatus.Pendiente] = new() { ReservationStatus.Confirmada, ReservationStatus.Anulada, ReservationStatus.NoShow },
+        [ReservationStatus.Pendiente] = new() { ReservationStatus.Confirmada, ReservationStatus.CheckIn, ReservationStatus.Anulada, ReservationStatus.NoShow },
         [ReservationStatus.Confirmada] = new() { ReservationStatus.CheckIn, ReservationStatus.Anulada, ReservationStatus.NoShow },
-        [ReservationStatus.CheckIn] = new() { ReservationStatus.CheckOut },
+        [ReservationStatus.CheckIn] = new() { ReservationStatus.CheckOut, ReservationStatus.Liquidada },
         [ReservationStatus.CheckOut] = new() { ReservationStatus.Liquidada },
         [ReservationStatus.Liquidada] = new(),
         [ReservationStatus.Anulada] = new(),

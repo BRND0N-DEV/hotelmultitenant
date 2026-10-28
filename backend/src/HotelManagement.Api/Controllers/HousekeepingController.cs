@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
+using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
 namespace HotelManagement.Api.Controllers;
@@ -18,11 +19,16 @@ public class HousekeepingController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public HousekeepingController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public HousekeepingController(
+        IHotelDbContext dbContext,
+        ITenantContext tenantContext,
+        ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
     [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
@@ -72,11 +78,14 @@ public class HousekeepingController : ControllerBase
             return NotFound(new { message = "Habitación no encontrada en la sede activa." });
         }
 
+        var oldOperational = room.OperationalStatus;
+        var oldCleaning = room.CleaningStatus;
+
         if (dto.CleaningStatus.HasValue)
         {
             room.CleaningStatus = dto.CleaningStatus.Value;
 
-            // Si la camarera marca la habitación como limpia y estaba fuera de servicio por limpieza, ponerla disponible
+            // Si se marca limpia y estaba fuera de servicio por aseo, habilitar como disponible
             if (dto.CleaningStatus.Value == RoomCleaningStatus.Limpia && room.OperationalStatus == RoomOperationalStatus.FueraDeServicio)
             {
                 room.OperationalStatus = RoomOperationalStatus.Disponible;
@@ -85,7 +94,16 @@ public class HousekeepingController : ControllerBase
 
         if (dto.OperationalStatus.HasValue)
         {
-            room.OperationalStatus = dto.OperationalStatus.Value;
+            // Regla de negocio: Si se retira de mantenimiento a disponible, verificar si está limpia
+            // Si la habitación sigue sucia o en limpieza, no puede quedar inmediatamente disponible para huéspedes
+            if (dto.OperationalStatus.Value == RoomOperationalStatus.Disponible && room.CleaningStatus != RoomCleaningStatus.Limpia)
+            {
+                room.OperationalStatus = RoomOperationalStatus.FueraDeServicio;
+            }
+            else
+            {
+                room.OperationalStatus = dto.OperationalStatus.Value;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(dto.Notes))
@@ -93,10 +111,24 @@ public class HousekeepingController : ControllerBase
             room.Notes = dto.Notes;
         }
 
+        // Registrar auditoría de trazabilidad operativa
+        _dbContext.AuditLogs.Add(new AuditLog
+        {
+            HotelId = room.HotelId,
+            UserId = _currentUserService.UserId,
+            Level = AuditLevel.Negocio,
+            Action = $"Cambio de estado habitación {room.RoomNumber}",
+            EntityName = nameof(Room),
+            EntityId = room.RoomId.ToString(),
+            OldValues = System.Text.Json.JsonSerializer.Serialize(new { OperationalStatus = oldOperational, CleaningStatus = oldCleaning }),
+            NewValues = System.Text.Json.JsonSerializer.Serialize(new { room.OperationalStatus, room.CleaningStatus }),
+            Timestamp = DateTime.UtcNow
+        });
+
         await _dbContext.SaveChangesAsync();
         return Ok(new
         {
-            message = $"Estado de limpieza de habitación '{room.RoomNumber}' actualizado a '{room.CleaningStatus}'.",
+            message = $"Estado de habitación '{room.RoomNumber}' actualizado (Operativo: '{room.OperationalStatus}', Limpieza: '{room.CleaningStatus}').",
             cleaningStatus = room.CleaningStatus,
             operationalStatus = room.OperationalStatus
         });

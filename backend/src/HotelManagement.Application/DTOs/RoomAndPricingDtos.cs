@@ -31,6 +31,18 @@ public class CreateRoomTypeDto
     public string? Amenities { get; set; }
 }
 
+public class UpdateRoomTypeDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public int BaseCapacity { get; set; } = 1;
+    public int MaxCapacity { get; set; } = 2;
+    public decimal BasePrice { get; set; }
+    public string? Description { get; set; }
+    public string? Amenities { get; set; }
+    public bool? IsActive { get; set; }
+}
+
 public class RoomDto
 {
     public int RoomId { get; set; }
@@ -54,12 +66,24 @@ public class CreateRoomDto
     public string? Notes { get; set; }
 }
 
+public class UpdateRoomDto
+{
+    public int RoomTypeId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public int Floor { get; set; }
+    public RoomOperationalStatus? OperationalStatus { get; set; }
+    public RoomCleaningStatus? CleaningStatus { get; set; }
+    public string? Notes { get; set; }
+    public bool? IsActive { get; set; }
+}
+
 public class UpdateRoomStatusDto
 {
     public RoomOperationalStatus? OperationalStatus { get; set; }
     public RoomCleaningStatus? CleaningStatus { get; set; }
     public string? Notes { get; set; }
 }
+
 
 // --- SEASONS, PROMOTIONS, TAXES & SERVICES ---
 public class SeasonDto
@@ -138,3 +162,12 @@ public class CreateAdditionalServiceDto
     public string Category { get; set; } = string.Empty;
     public decimal Price { get; set; }
 }
+
+public class UpdateAdditionalServiceDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public bool? IsActive { get; set; }
+}
+

@@ -97,6 +97,127 @@ public class GuestsController : ControllerBase
         });
     }
 
+    // RF-45, RF-46 / HU-22: Actualización y rectificación de datos personales (Habeas Data, Ley 1581 de 2012)
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista}")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateGuest(int id, [FromBody] UpdateGuestDto dto)
+    {
+        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+
+        var guest = await _dbContext.Guests
+            .Include(g => g.DataConsents)
+            .FirstOrDefaultAsync(g => g.GuestId == id);
+
+        if (guest == null || (!_tenantContext.IsGlobalBypass && guest.HotelId != targetHotelId))
+        {
+            return NotFound(new { message = "Huésped no encontrado en la sede activa." });
+        }
+
+        if (guest.IsAnonymized)
+        {
+            return BadRequest(new { message = "No es posible actualizar ni rectificar datos de un huésped previamente anonimizado por derecho al olvido." });
+        }
+
+        // Validaciones estrictas de negocio (RF-45 / RF-46)
+        if (string.IsNullOrWhiteSpace(dto.FirstName))
+        {
+            return BadRequest(new { message = "El nombre del huésped es obligatorio." });
+        }
+        if (string.IsNullOrWhiteSpace(dto.LastName))
+        {
+            return BadRequest(new { message = "Los apellidos del huésped son obligatorios." });
+        }
+        if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@'))
+        {
+            return BadRequest(new { message = "El correo electrónico es inválido o no tiene formato correcto." });
+        }
+        if (string.IsNullOrWhiteSpace(dto.Phone))
+        {
+            return BadRequest(new { message = "El teléfono de contacto es obligatorio." });
+        }
+
+        var oldValues = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            guest.FirstName,
+            guest.LastName,
+            guest.Email,
+            guest.Phone,
+            guest.Nationality
+        });
+
+        // Actualizar campos autorizados para rectificación
+        guest.FirstName = dto.FirstName.Trim();
+        guest.LastName = dto.LastName.Trim();
+        guest.Email = dto.Email.Trim().ToLowerInvariant();
+        guest.Phone = dto.Phone.Trim();
+        if (!string.IsNullOrWhiteSpace(dto.Nationality))
+        {
+            guest.Nationality = dto.Nationality.Trim();
+        }
+
+        // Si se actualiza el consentimiento expreso
+        if (dto.AcceptDataConsent.HasValue)
+        {
+            var existingConsent = guest.DataConsents.OrderByDescending(dc => dc.AcceptedAt).FirstOrDefault();
+            if (existingConsent != null)
+            {
+                existingConsent.Accepted = dto.AcceptDataConsent.Value;
+                existingConsent.AcceptedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                guest.DataConsents.Add(new DataConsent
+                {
+                    GuestId = guest.GuestId,
+                    Accepted = dto.AcceptDataConsent.Value,
+                    AcceptedAt = DateTime.UtcNow,
+                    PolicyVersion = "1.0",
+                    IpAddress = "127.0.0.1"
+                });
+            }
+        }
+
+        var newValues = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            guest.FirstName,
+            guest.LastName,
+            guest.Email,
+            guest.Phone,
+            guest.Nationality
+        });
+
+        // Trazabilidad y auditoría de la rectificación de datos personales (RF-45, Ley 1581)
+        _dbContext.AuditLogs.Add(new AuditLog
+        {
+            HotelId = guest.HotelId,
+            UserId = _currentUserService.UserId,
+            Level = AuditLevel.Negocio,
+            Action = "Rectificación / Actualización de datos de huésped (Habeas Data)",
+            EntityName = nameof(Guest),
+            EntityId = guest.GuestId.ToString(),
+            OldValues = oldValues,
+            NewValues = newValues,
+            Timestamp = DateTime.UtcNow
+        });
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new GuestDto
+        {
+            GuestId = guest.GuestId,
+            DocumentType = guest.DocumentType,
+            DocumentNumber = guest.DocumentNumber,
+            FirstName = guest.FirstName,
+            LastName = guest.LastName,
+            FullName = guest.FullName,
+            Email = guest.Email,
+            Phone = guest.Phone,
+            Nationality = guest.Nationality,
+            IsAnonymized = guest.IsAnonymized,
+            HasConsent = guest.DataConsents.Any(dc => dc.Accepted)
+        });
+    }
+
     // RF-47 / HU-23: Derecho al olvido y anonimización irreversible (AdminGlobal)
     [Authorize(Roles = UserRole.AdminGlobal)]
     [HttpPost("{id}/anonymize")]

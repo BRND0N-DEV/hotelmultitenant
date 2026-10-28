@@ -222,9 +222,13 @@ public class ServicesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AdditionalServiceDto>>> GetServices([FromQuery] bool? onlyActive)
+    public async Task<ActionResult<IEnumerable<AdditionalServiceDto>>> GetServices([FromQuery] int? hotelId, [FromQuery] bool? onlyActive)
     {
-        var query = _dbContext.AdditionalServices.AsQueryable();
+        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+
+        var query = _dbContext.AdditionalServices
+            .Where(s => (_tenantContext.IsGlobalBypass && !hotelId.HasValue) || s.HotelId == targetHotelId)
+            .AsQueryable();
 
         if (onlyActive == true)
         {
@@ -248,11 +252,43 @@ public class ServicesController : ControllerBase
         return Ok(services);
     }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult<AdditionalServiceDto>> GetService(int id)
+    {
+        var s = await _dbContext.AdditionalServices.FindAsync(id);
+        if (s == null) return NotFound(new { message = "Servicio no encontrado." });
+
+        return Ok(new AdditionalServiceDto
+        {
+            ServiceId = s.ServiceId,
+            HotelId = s.HotelId,
+            Name = s.Name,
+            Category = s.Category,
+            Price = s.Price,
+            IsActive = s.IsActive
+        });
+    }
+
     [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede}")]
     [HttpPost]
-    public async Task<ActionResult<AdditionalServiceDto>> CreateService([FromBody] CreateAdditionalServiceDto dto)
+    public async Task<ActionResult<AdditionalServiceDto>> CreateService([FromBody] CreateAdditionalServiceDto dto, [FromQuery] int? hotelId)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+        {
+            return BadRequest(new { message = "El nombre del servicio es obligatorio." });
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Category))
+        {
+            return BadRequest(new { message = "La categoría del servicio es obligatoria." });
+        }
+
+        if (dto.Price <= 0)
+        {
+            return BadRequest(new { message = "La tarifa del servicio debe ser un valor positivo mayor a $0.00 COP." });
+        }
 
         var service = new AdditionalService
         {
@@ -266,7 +302,7 @@ public class ServicesController : ControllerBase
         _dbContext.AdditionalServices.Add(service);
         await _dbContext.SaveChangesAsync();
 
-        return Ok(new AdditionalServiceDto
+        return CreatedAtAction(nameof(GetService), new { id = service.ServiceId }, new AdditionalServiceDto
         {
             ServiceId = service.ServiceId,
             HotelId = service.HotelId,
@@ -274,6 +310,46 @@ public class ServicesController : ControllerBase
             Category = service.Category,
             Price = service.Price,
             IsActive = service.IsActive
+        });
+    }
+
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede}")]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<AdditionalServiceDto>> UpdateService(int id, [FromBody] UpdateAdditionalServiceDto dto)
+    {
+        var s = await _dbContext.AdditionalServices.FindAsync(id);
+        if (s == null) return NotFound(new { message = "Servicio no encontrado." });
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+        {
+            return BadRequest(new { message = "El nombre del servicio es obligatorio." });
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Category))
+        {
+            return BadRequest(new { message = "La categoría del servicio es obligatoria." });
+        }
+
+        if (dto.Price <= 0)
+        {
+            return BadRequest(new { message = "La tarifa del servicio debe ser un valor positivo mayor a $0.00 COP." });
+        }
+
+        s.Name = dto.Name.Trim();
+        s.Category = dto.Category.Trim();
+        s.Price = dto.Price;
+        if (dto.IsActive.HasValue) s.IsActive = dto.IsActive.Value;
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new AdditionalServiceDto
+        {
+            ServiceId = s.ServiceId,
+            HotelId = s.HotelId,
+            Name = s.Name,
+            Category = s.Category,
+            Price = s.Price,
+            IsActive = s.IsActive
         });
     }
 
@@ -289,3 +365,4 @@ public class ServicesController : ControllerBase
         return Ok(new { message = $"Servicio '{s.Name}' ahora está {(s.IsActive ? "Activo" : "Inactivo")}.", isActive = s.IsActive });
     }
 }
+

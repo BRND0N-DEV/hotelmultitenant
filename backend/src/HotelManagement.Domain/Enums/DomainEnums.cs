@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace HotelManagement.Domain.Enums;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ReservationStatus
 {
     Pendiente = 1,
@@ -11,6 +14,7 @@ public enum ReservationStatus
     NoShow = 7
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum RoomOperationalStatus
 {
     Disponible = 1,
@@ -19,6 +23,7 @@ public enum RoomOperationalStatus
     Mantenimiento = 4
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum RoomCleaningStatus
 {
     Limpia = 1,
@@ -27,6 +32,7 @@ public enum RoomCleaningStatus
     EnRevision = 4
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PaymentMethod
 {
     Efectivo = 1,
@@ -35,18 +41,21 @@ public enum PaymentMethod
     Transferencia = 4
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum FolioStatus
 {
     Abierto = 1,
     Cerrado = 2
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ShiftStatus
 {
     Abierto = 1,
     Cerrado = 2
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum AuditLevel
 {
     Negocio = 1,

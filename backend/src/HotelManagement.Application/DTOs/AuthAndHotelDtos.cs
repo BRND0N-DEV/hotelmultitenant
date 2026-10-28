@@ -25,6 +25,12 @@ public class RefreshTokenRequestDto
     public int? ActiveHotelId { get; set; }
 }
 
+public class SwitchHotelRequestDto
+{
+    public int HotelId { get; set; }
+}
+
+
 public class UserInfoDto
 {
     public int UserId { get; set; }

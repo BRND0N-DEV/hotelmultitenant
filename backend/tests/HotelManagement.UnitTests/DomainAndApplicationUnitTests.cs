@@ -79,11 +79,13 @@ public class ReservationStateMachineTests
 {
     [Theory]
     [InlineData(ReservationStatus.Pendiente, ReservationStatus.Confirmada)]
+    [InlineData(ReservationStatus.Pendiente, ReservationStatus.CheckIn)]
     [InlineData(ReservationStatus.Pendiente, ReservationStatus.Anulada)]
     [InlineData(ReservationStatus.Pendiente, ReservationStatus.NoShow)]
     [InlineData(ReservationStatus.Confirmada, ReservationStatus.CheckIn)]
     [InlineData(ReservationStatus.Confirmada, ReservationStatus.Anulada)]
     [InlineData(ReservationStatus.CheckIn, ReservationStatus.CheckOut)]
+    [InlineData(ReservationStatus.CheckIn, ReservationStatus.Liquidada)]
     [InlineData(ReservationStatus.CheckOut, ReservationStatus.Liquidada)]
     public void ValidateTransition_WhenValid_ShouldNotThrow(ReservationStatus from, ReservationStatus to)
     {
@@ -92,8 +94,8 @@ public class ReservationStateMachineTests
     }
 
     [Theory]
-    [InlineData(ReservationStatus.Pendiente, ReservationStatus.CheckIn)]
     [InlineData(ReservationStatus.Pendiente, ReservationStatus.CheckOut)]
+    [InlineData(ReservationStatus.Pendiente, ReservationStatus.Liquidada)]
     [InlineData(ReservationStatus.Confirmada, ReservationStatus.Liquidada)]
     [InlineData(ReservationStatus.Anulada, ReservationStatus.CheckIn)]
     [InlineData(ReservationStatus.Liquidada, ReservationStatus.Pendiente)]

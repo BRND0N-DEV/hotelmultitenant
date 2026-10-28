@@ -240,6 +240,7 @@ public class FoliosController : ControllerBase
         var folio = await _dbContext.Folios
             .Include(f => f.Charges)
             .Include(f => f.Payments)
+            .Include(f => f.Reservation)
             .FirstOrDefaultAsync(f => f.FolioId == id);
 
         if (folio == null) return NotFound(new { message = "Folio no encontrado." });
@@ -252,10 +253,25 @@ public class FoliosController : ControllerBase
         string receiptNumber = $"REC-{DateTime.UtcNow:yyyyMM}-{Guid.NewGuid().ToString()[..6].ToUpperInvariant()}";
         int userId = _currentUserService.UserId ?? 1;
 
+        // Actualizar totales en turno de caja si está abierto (RF-42)
+        CashShift? shift = null;
+        if (dto.CashShiftId.HasValue)
+        {
+            shift = await _dbContext.CashShifts.FindAsync(dto.CashShiftId.Value);
+        }
+        else
+        {
+            int targetHotelId = folio.Reservation?.HotelId ?? _tenantContext.CurrentHotelId ?? 1;
+            shift = await _dbContext.CashShifts
+                .FirstOrDefaultAsync(s => s.HotelId == targetHotelId && s.UserId == userId && s.Status == ShiftStatus.Abierto)
+                ?? await _dbContext.CashShifts
+                .FirstOrDefaultAsync(s => s.HotelId == targetHotelId && s.Status == ShiftStatus.Abierto);
+        }
+
         var payment = new FolioPayment
         {
             FolioId = folio.FolioId,
-            CashShiftId = dto.CashShiftId,
+            CashShiftId = shift != null && shift.Status == ShiftStatus.Abierto ? shift.CashShiftId : dto.CashShiftId,
             Amount = dto.Amount,
             PaymentMethod = dto.PaymentMethod,
             Reference = string.IsNullOrWhiteSpace(dto.Reference) ? "PAGO-MOSTRADOR" : dto.Reference.Trim(),
@@ -267,16 +283,11 @@ public class FoliosController : ControllerBase
         folio.Payments.Add(payment);
         folio.RecalculateTotals();
 
-        // Actualizar totales en turno de caja si está abierto (RF-42)
-        if (dto.CashShiftId.HasValue)
+        if (shift != null && shift.Status == ShiftStatus.Abierto)
         {
-            var shift = await _dbContext.CashShifts.FindAsync(dto.CashShiftId.Value);
-            if (shift != null && shift.Status == ShiftStatus.Abierto)
-            {
-                if (dto.PaymentMethod == PaymentMethod.Efectivo) shift.TotalCash += dto.Amount;
-                else if (dto.PaymentMethod == PaymentMethod.TarjetaDebito || dto.PaymentMethod == PaymentMethod.TarjetaCredito) shift.TotalCard += dto.Amount;
-                else if (dto.PaymentMethod == PaymentMethod.Transferencia) shift.TotalTransfer += dto.Amount;
-            }
+            if (dto.PaymentMethod == PaymentMethod.Efectivo) shift.TotalCash += dto.Amount;
+            else if (dto.PaymentMethod == PaymentMethod.TarjetaDebito || dto.PaymentMethod == PaymentMethod.TarjetaCredito) shift.TotalCard += dto.Amount;
+            else if (dto.PaymentMethod == PaymentMethod.Transferencia) shift.TotalTransfer += dto.Amount;
         }
 
         await _dbContext.SaveChangesAsync();

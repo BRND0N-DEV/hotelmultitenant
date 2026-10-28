@@ -498,3 +498,4 @@ C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.Concurrency
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.ConcurrencyTests\obj\Debug\net9.0\HotelManagement.ConcurrencyTests.pdb
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.ConcurrencyTests\obj\Debug\net9.0\HotelManagement.ConcurrencyTests.genruntimeconfig.cache
 C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.ConcurrencyTests\obj\Debug\net9.0\ref\HotelManagement.ConcurrencyTests.dll
+C:\Users\USER\Desktop\hotelmultitenant\backend\tests\HotelManagement.ConcurrencyTests\obj\Debug\net9.0\HotelManagement.ConcurrencyTests.sourcelink.json
