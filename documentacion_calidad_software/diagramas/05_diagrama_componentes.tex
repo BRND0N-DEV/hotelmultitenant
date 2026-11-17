@@ -1,0 +1,42 @@
+% Diagrama 5: Diagrama de Componentes de la Solución
+\begin{tikzpicture}[
+    comp/.style={rectangle, rounded corners=3pt, draw=azulhotel, line width=0.8pt, fill=white, text width=3.9cm, minimum height=1.25cm, align=center, font=\scriptsize},
+    group/.style={rectangle, rounded corners=5pt, draw=azulhotel, dashed, line width=0.9pt, fill=azulclaro!20},
+    arrow/.style={-Stealth, thick, draw=azulhotel!90!black}
+]
+
+% Contenedor Frontend
+\draw[group] (-6.8, 2.2) rectangle (-0.4, 6.2);
+\node[font=\footnotesize\bfseries\color{azulhotel}] at (-3.6, 5.9) {Frontend: \texttt{hotel-management-web} (Angular 22)};
+\node[comp] (fe_pages) at (-4.8, 4.7) {\textbf{Pages \& Layout}\\ \texttt{Dashboard}, \texttt{Availability}, \texttt{Reservations}, \texttt{Reception}, \texttt{Folio}, \texttt{Housekeeping}, \texttt{CashShift}, \texttt{AdminPages}, \texttt{Audit}};
+\node[comp] (fe_core) at (-2.4, 3.0) {\textbf{Core Services \& Guards}\\ \texttt{AuthService} (Signals)\\ \texttt{ApiService} (\texttt{HttpClient})\\ \texttt{authGuard}, \texttt{roleGuard}\\ \texttt{authInterceptor}};
+
+% Contenedor Backend API
+\draw[group] (0.4, 2.2) rectangle (6.8, 6.2);
+\node[font=\footnotesize\bfseries\color{azulhotel}] at (3.6, 5.9) {Backend API: \texttt{HotelManagement.Api} (.NET 9)};
+\node[comp] (be_mw) at (2.5, 4.7) {\textbf{Middlewares}\\ \texttt{CorrelationIdMiddleware}\\ \texttt{ExceptionHandlingMiddleware}\\ \texttt{TenantResolutionMiddleware}\\ \texttt{HttpAuditMiddleware}};
+\node[comp] (be_ctrl) at (4.7, 3.0) {\textbf{Controllers \& Helpers}\\ 16 Controladores REST\\ \texttt{TenantAuthorizationHelper}\\ \texttt{CurrentUserService}};
+
+% Contenedor Application & Domain
+\draw[group] (-6.8, -2.1) rectangle (-0.4, 1.5);
+\node[font=\footnotesize\bfseries\color{azulhotel}] at (-3.6, 1.2) {\texttt{Application} \& \texttt{Domain}};
+\node[comp] (app_eng) at (-4.8, 0.1) {\textbf{Business Engines}\\ \texttt{PricingEngine}\\ \texttt{ReservationStateMachine}\\ \texttt{FolioEngine}\\ \texttt{HotelKpiCalculator}};
+\node[comp] (dom_core) at (-2.4, -1.2) {\textbf{Domain Core}\\ 22 Entidades C\#\\ 7 Enums de Estado\\ Excepciones de Dominio};
+
+% Contenedor Infrastructure & DB
+\draw[group] (0.4, -2.1) rectangle (6.8, 1.5);
+\node[font=\footnotesize\bfseries\color{azulhotel}] at (3.6, 1.2) {\texttt{Infrastructure} \& \texttt{SQL Server}};
+\node[comp] (inf_ctx) at (2.5, 0.1) {\textbf{Persistence \& Security}\\ \texttt{HotelDbContext} (EF Core 9)\\ \texttt{TenantContext}\\ \texttt{JwtTokenService}, \texttt{BCrypt}\\ \texttt{QrCodeService}};
+\node[comp, fill=azulclaro!60] (db_sql) at (4.7, -1.2) {\textbf{SQL Server (\texttt{HotelManagementDb})}\\ 22 Tablas Relacionales\\ \texttt{TR\_Reservations\_PreventOverbooking}\\ Semillas UTF-8 (4 Hoteles)};
+
+% Conexiones
+\draw[arrow] (fe_pages) -- (fe_core);
+\draw[arrow] (fe_core.east) -- node[above, font=\scriptsize] {HTTP/JSON} (be_mw.west);
+\draw[arrow] (be_mw) -- (be_ctrl);
+\draw[arrow] (be_ctrl.south) -- (app_eng.north east);
+\draw[arrow] (app_eng) -- (dom_core);
+\draw[arrow] (be_ctrl.south) -- (inf_ctx.north);
+\draw[arrow] (inf_ctx.west) -- (app_eng.east);
+\draw[arrow] (inf_ctx) -- (db_sql);
+
+\end{tikzpicture}

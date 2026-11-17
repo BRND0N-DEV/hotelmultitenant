@@ -1,0 +1,47 @@
+% Diagrama 1: Arquitectura General del Sistema (Clean Architecture + Angular + SQL Server)
+\begin{tikzpicture}[
+    node distance=0.9cm and 1.2cm,
+    layer/.style={rectangle, rounded corners=4pt, draw=azulhotel, line width=1pt, fill=azulclaro!40, minimum width=13.5cm, minimum height=1.7cm, align=center},
+    box/.style={rectangle, rounded corners=3pt, draw=azulhotel!80!black, line width=0.8pt, fill=white, minimum width=3.6cm, minimum height=1.05cm, align=center, font=\footnotesize},
+    dbbox/.style={cylinder, shape border rotate=90, aspect=0.25, draw=azulhotel, line width=1pt, fill=azulclaro!70, minimum width=3.8cm, minimum height=1.3cm, align=center, font=\footnotesize\bfseries},
+    arrow/.style={-Stealth, thick, draw=azulhotel}
+]
+
+% Capa Presentación
+\node[layer, fill=azulclaro!25] (ui_layer) at (0, 6.6) {};
+\node[anchor=north west, font=\footnotesize\bfseries\color{azulhotel}] at (ui_layer.north west) {Capa de Presentaci\'on (Frontend SPA --- Angular 22.2 / TypeScript 6.0)};
+\node[box] (ui_comp) at (-4.2, 6.45) {Standalone Components\\ \scriptsize (12 Vistas Operativas y Admin)};
+\node[box] (ui_state) at (0, 6.45) {Estado Reactivo Signals\\ \scriptsize (\texttt{AuthService}, \texttt{ApiService})};
+\node[box] (ui_inter) at (4.2, 6.45) {Guardias e Interceptores\\ \scriptsize (\texttt{authGuard}, \texttt{roleGuard}, \texttt{X-Hotel-Id})};
+
+% Capa API
+\node[layer, fill=grisclaro] (api_layer) at (0, 4.4) {};
+\node[anchor=north west, font=\footnotesize\bfseries\color{azulhotel}] at (api_layer.north west) {Capa de Presentaci\'on Backend (\texttt{HotelManagement.Api} --- ASP.NET Core 9 Web API)};
+\node[box] (api_mw) at (-4.2, 4.25) {Pipeline de Middlewares\\ \scriptsize (Correlation, Exceptions, Tenant, Audit)};
+\node[box] (api_ctrl) at (0, 4.25) {16 Controladores REST\\ \scriptsize (66 Acciones + \texttt{/health})};
+\node[box] (api_sec) at (4.2, 4.25) {Seguridad RBAC y Tenant\\ \scriptsize (\texttt{[Authorize]}, \texttt{TenantAuthorizationHelper})};
+
+% Capa Aplicación y Dominio
+\node[layer, fill=azulclaro!25] (app_layer) at (0, 2.2) {};
+\node[anchor=north west, font=\footnotesize\bfseries\color{azulhotel}] at (app_layer.north west) {N\'ucleo de Negocio (\texttt{HotelManagement.Application} \& \texttt{HotelManagement.Domain})};
+\node[box] (dom_ent) at (-4.2, 2.05) {22 Entidades de Dominio\\ \scriptsize Enums y Excepciones Tipadas};
+\node[box] (app_eng) at (0, 2.05) {Motores de Reglas de Negocio\\ \scriptsize (\texttt{Pricing}, \texttt{StateMachine}, \texttt{Folio}, \texttt{KPI})};
+\node[box] (app_dto) at (4.2, 2.05) {Contratos e Interfaces\\ \scriptsize (DTOs, \texttt{IHotelDbContext}, \texttt{ITenantContext})};
+
+% Capa Infraestructura
+\node[layer, fill=grisclaro] (inf_layer) at (0, 0.0) {};
+\node[anchor=north west, font=\footnotesize\bfseries\color{azulhotel}] at (inf_layer.north west) {Capa de Infraestructura (\texttt{HotelManagement.Infrastructure} --- EF Core 9.0.2)};
+\node[box] (inf_db) at (-4.2, -0.15) {\texttt{HotelDbContext}\\ \scriptsize (16 Global Query Filters Multi-Tenant)};
+\node[box] (inf_aud) at (0, -0.15) {Auditor\'ia T\'ecnica Autom\'atica\\ \scriptsize (\texttt{SaveChangesAsync} ChangeTracker)};
+\node[box] (inf_srv) at (4.2, -0.15) {Servicios Transversales\\ \scriptsize (JWT, BCrypt, QRCoder, Email Sim.)};
+
+% Base de Datos
+\node[dbbox] (sql_db) at (0, -2.1) {Microsoft SQL Server (\texttt{HotelManagementDb})\\ \scriptsize 22 Tablas + Trigger \texttt{TR\_Reservations\_PreventOverbooking} + \texttt{ROWVERSION}};
+
+% Flechas entre capas
+\draw[arrow, <->] (ui_layer.south) -- node[right, font=\scriptsize] {REST JSON + Bearer JWT + \texttt{X-Hotel-Id} + \texttt{Idempotency-Key}} (api_layer.north);
+\draw[arrow] (api_layer.south) -- (app_layer.north);
+\draw[arrow] (inf_layer.north) -- node[right, font=\scriptsize] {Implementa interfaces de Application} (app_layer.south);
+\draw[arrow, <->] (inf_layer.south) -- node[right, font=\scriptsize] {Consultas parametrizadas T-SQL + Transacciones ACID} (sql_db.north);
+
+\end{tikzpicture}

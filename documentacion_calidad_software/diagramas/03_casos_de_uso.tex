@@ -1,0 +1,64 @@
+% Diagrama 3: Diagrama de Casos de Uso por Rol (Matriz RBAC Implementada)
+\begin{tikzpicture}[
+    actor/.style={rectangle, rounded corners=3pt, draw=azulhotel, line width=1pt, fill=azulclaro!60, minimum width=2.8cm, minimum height=0.8cm, align=center, font=\footnotesize\bfseries},
+    usecase/.style={ellipse, draw=azulhotel!80!black, line width=0.7pt, fill=white, minimum width=4.8cm, minimum height=0.72cm, align=center, font=\scriptsize},
+    link/.style={-Stealth, draw=azulhotel!80!black, thin}
+]
+
+% Actores a la izquierda (Roles Globales y de Supervisión)
+\node[actor] (socio) at (-5.2, 4.2) {Socio\\ \scriptsize (Lectura Global)};
+\node[actor] (adming) at (-5.2, 1.5) {AdminGlobal\\ \scriptsize (Gobierno Cadena)};
+\node[actor] (auditor) at (-5.2, -1.5) {Auditor\\ \scriptsize (Solo Lectura / Control)};
+
+% Actores a la derecha (Roles Operativos de Sede)
+\node[actor] (admins) at (5.2, 4.2) {AdminSede\\ \scriptsize (Gesti\'on Local)};
+\node[actor] (recep) at (5.2, 1.2) {Recepcionista\\ \scriptsize (Front-Desk / Caja)};
+\node[actor] (hk) at (5.2, -2.0) {Housekeeping\\ \scriptsize (Camarer\'ia)};
+
+% Casos de uso centrales
+\node[usecase] (uc1) at (0, 4.8) {Consultar Dashboard KPIs y Exportar CSV};
+\node[usecase] (uc2) at (0, 3.7) {Administrar Sedes, Usuarios y Anonimizar Hu\'espedes};
+\node[usecase] (uc3) at (0, 2.6) {Parametrizar Inventario: Tipolog\'ias, Habitaciones y Servicios};
+\node[usecase] (uc4) at (0, 1.5) {Configurar Temporadas y Promociones Tarifarias};
+\node[usecase] (uc5) at (0, 0.4) {Cotizar Disponibilidad Local, Inter-Sedes y Calendario 14d};
+\node[usecase] (uc6) at (0, -0.7) {Gestionar Reservas, Check-In, Check-Out y Cancelaciones};
+\node[usecase] (uc7) at (0, -1.8) {Operar Folios (Cargos, Anulaciones, Pagos) y Turnos de Caja};
+\node[usecase] (uc8) at (0, -2.9) {Consultar y Actualizar Estado de Limpieza de Habitaciones};
+\node[usecase] (uc9) at (0, -4.0) {Consultar Bit\'acora de Auditor\'ia (3 Niveles)};
+
+% Relaciones Socio
+\draw[link] (socio.east) -- (uc1.west);
+
+% Relaciones AdminGlobal
+\draw[link] (adming.east) -- (uc1.west);
+\draw[link] (adming.east) -- (uc2.west);
+\draw[link] (adming.east) -- (uc3.west);
+\draw[link] (adming.east) -- (uc4.west);
+\draw[link] (adming.east) -- (uc5.west);
+\draw[link] (adming.east) -- (uc9.west);
+
+% Relaciones Auditor
+\draw[link] (auditor.east) -- (uc1.west);
+\draw[link] (auditor.east) -- (uc5.west);
+\draw[link] (auditor.east) -- (uc9.west);
+
+% Relaciones AdminSede
+\draw[link] (admins.west) -- (uc1.east);
+\draw[link] (admins.west) -- (uc3.east);
+\draw[link] (admins.west) -- (uc4.east);
+\draw[link] (admins.west) -- (uc5.east);
+\draw[link] (admins.west) -- (uc6.east);
+\draw[link] (admins.west) -- (uc7.east);
+\draw[link] (admins.west) -- (uc8.east);
+\draw[link] (admins.west) -- (uc9.east);
+
+% Relaciones Recepcionista
+\draw[link] (recep.west) -- (uc5.east);
+\draw[link] (recep.west) -- (uc6.east);
+\draw[link] (recep.west) -- (uc7.east);
+\draw[link] (recep.west) -- (uc8.east);
+
+% Relaciones Housekeeping
+\draw[link] (hk.west) -- (uc8.east);
+
+\end{tikzpicture}

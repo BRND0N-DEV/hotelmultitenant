@@ -1,0 +1,60 @@
+% Diagrama 6: Modelo Entidad-Relación (22 Tablas de HotelManagementDb en SQL Server)
+\begin{tikzpicture}[
+    entity/.style={rectangle, rounded corners=2pt, draw=azulhotel, line width=0.75pt, fill=white, text width=3.55cm, align=left, inner sep=3.5pt, font=\scriptsize},
+    rootentity/.style={rectangle, rounded corners=2pt, draw=azulhotel, line width=1.1pt, fill=azulclaro!65, text width=3.8cm, align=left, inner sep=4pt, font=\scriptsize},
+    rel/.style={-Stealth, draw=azulhotel!85!black, semithick}
+]
+
+% Núcleo Tenant y Seguridad
+\node[rootentity] (hotels) at (0, 4.6) {\textbf{Hotels (PK: HotelId)}\\ \texttt{Code (UQ), Name, City}\\ \texttt{Currency, PrimaryColor, IsActive}};
+
+\node[entity] (users) at (-5.1, 4.6) {\textbf{Users (PK: UserId)}\\ \texttt{Email (UQ), PasswordHash}\\ \texttt{Role, FailedLoginAttempts}\\ \texttt{LockoutEnd, IsActive, RowVersion}};
+
+\node[entity] (hotelusers) at (-5.1, 2.7) {\textbf{HotelUsers (PK: HotelUserId)}\\ \texttt{FK: UserId, FK: HotelId}\\ \texttt{IsDefault, UQ(UserId, HotelId)}};
+
+\node[entity] (tokens) at (-5.1, 0.9) {\textbf{RefreshTokens (PK)}\\ \texttt{FK: UserId, Token (UQ)}\\ \texttt{ExpiresAt, RevokedAt}};
+
+% Inventario Físico y Tarifario
+\node[entity] (roomtypes) at (0, 2.5) {\textbf{RoomTypes (PK: RoomTypeId)}\\ \texttt{FK: HotelId, Code, Name}\\ \texttt{BaseCapacity, MaxCapacity}\\ \texttt{BasePrice, Amenities, IsActive}};
+
+\node[entity] (rooms) at (0, 0.5) {\textbf{Rooms (PK: RoomId)}\\ \texttt{FK: HotelId, FK: RoomTypeId}\\ \texttt{RoomNumber, Floor, IsActive}\\ \texttt{OperationalStatus, CleaningStatus}\\ \texttt{RowVersion, UQ(HotelId,RoomNumber)}};
+
+\node[entity] (pricing) at (5.1, 4.4) {\textbf{ Cat\'alogo Tarifario (x4 Tablas)}\\ \textbf{Seasons} (\texttt{FK: HotelId, Multiplier})\\ \textbf{Promotions} (\texttt{FK: HotelId, Code})\\ \textbf{HotelTaxes} (\texttt{FK: HotelId, \%})\\ \textbf{CancellationPolicies} (\texttt{FK: HotelId})};
+
+\node[entity] (services) at (5.1, 2.2) {\textbf{AdditionalServices (PK)}\\ \texttt{FK: HotelId, Name, Category}\\ \texttt{Price, IsActive}};
+
+% Huéspedes y Reservas
+\node[entity] (guests) at (-5.1, -1.1) {\textbf{Guests (PK: GuestId)}\\ \texttt{FK: HotelId, DocumentType}\\ \texttt{DocumentNumber, Email, Phone}\\ \texttt{IsAnonymized}};
+
+\node[entity] (consents) at (-5.1, -2.9) {\textbf{DataConsents (PK)}\\ \texttt{FK: GuestId, Accepted}\\ \texttt{IpAddress, PolicyVersion}};
+
+\node[entity] (reservations) at (0, -1.7) {\textbf{Reservations (PK: ReservationId)}\\ \texttt{FK: HotelId, RoomId, GuestId}\\ \texttt{FK: CancellationPolicyId}\\ \texttt{Code (UQ), CheckInDate, CheckOutDate}\\ \texttt{Status, TotalAmount, PenaltyAmount}\\ \texttt{RowVersion + Trigger Anti-Overbooking}};
+
+\node[entity] (res_children) at (0, -3.9) {\textbf{Detalle Reserva (x2 Tablas)}\\ \textbf{ReservationCompanions} (\texttt{FK: ResId})\\ \textbf{ReservationStateHistories}\\ (\texttt{FK: ResId, ChangedByUserId})};
+
+% Folios, Caja y Auditoría
+\node[entity] (folios) at (5.1, 0.2) {\textbf{Folios (PK: FolioId)}\\ \texttt{FK: ReservationId (UQ), HotelId}\\ \texttt{TotalCharges, TotalPayments}\\ \texttt{Balance, Status}};
+
+\node[entity] (folio_items) at (5.1, -1.8) {\textbf{Movimientos Folio (x2 Tablas)}\\ \textbf{FolioCharges} (\texttt{FK: FolioId, ServiceId})\\ \textbf{FolioPayments} (\texttt{FK: FolioId, CashShiftId})};
+
+\node[entity] (cash_audit) at (5.1, -3.8) {\textbf{Control y Auditor\'ia (x3 Tablas)}\\ \textbf{CashShifts} (\texttt{FK: HotelId, UserId})\\ \textbf{AuditLogs} (\texttt{FK: HotelId, UserId})\\ \textbf{IdempotencyKeys} (\texttt{Key UQ})};
+
+% Relaciones principales
+\draw[rel] (users) -- (hotelusers);
+\draw[rel] (hotels) -- (hotelusers);
+\draw[rel] (users) -- (tokens);
+\draw[rel] (hotels) -- (roomtypes);
+\draw[rel] (roomtypes) -- (rooms);
+\draw[rel] (hotels) -- (pricing);
+\draw[rel] (hotels) -- (services);
+\draw[rel] (hotels.south west) -- (guests.north east);
+\draw[rel] (guests) -- (consents);
+\draw[rel] (rooms) -- (reservations);
+\draw[rel] (guests) -- (reservations);
+\draw[rel] (reservations) -- (res_children);
+\draw[rel] (reservations) -- (folios);
+\draw[rel] (folios) -- (folio_items);
+\draw[rel] (services.south) -- (folio_items.north east);
+\draw[rel] (folio_items) -- (cash_audit);
+
+\end{tikzpicture}

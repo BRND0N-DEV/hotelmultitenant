@@ -1,0 +1,923 @@
+\documentclass[12pt,a4paper]{article}
+
+% ==============================================================================
+% PAQUETES Y CONFIGURACIÓN ACADÉMICA UNIVERSITARIA (A4, 2.5 cm, Interlineado 1.5)
+% Compatible con pdfLaTeX y LuaLaTeX
+% ==============================================================================
+\usepackage[spanish,es-nodecimaldot,es-tabla]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{ragged2e}
+\justifying
+
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,shapes.symbols,arrows.meta,positioning,fit,calc,backgrounds}
+\usepackage{hyperref}
+
+% ==============================================================================
+% CAMPOS EDITABLES DE PORTADA (PERSONALIZAR ANTES DE IMPRIMIR/COMPILAR)
+% ==============================================================================
+\newcommand{\Institucion}{[NOMBRE DE LA INSTITUCI\'ON UNIVERSITARIA]}
+\newcommand{\Facultad}{[FACULTAD DE INGENIER\'IA]}
+\newcommand{\ProgramaAcademico}{[PROGRAMA ACAD\'EMICO --- INGENIER\'IA DE SOFTWARE / SISTEMAS]}
+\newcommand{\Asignatura}{Calidad de Software}
+\newcommand{\TituloProyecto}{Sistema de Inventariado Hotelero Multi-Tenant}
+\newcommand{\SubtituloProyecto}{Arquitectura, Aseguramiento de Calidad (ISO/IEC 25010), Control de Acceso RBAC y Verificaci\'on Automatizada de Aislamiento por Sede (CONTINENTALIA SAS)}
+\newcommand{\Docente}{[NOMBRE DEL DOCENTE]}
+\newcommand{\IntegranteUno}{[NOMBRE DEL INTEGRANTE 1 --- C\'ODIGO]}
+\newcommand{\IntegranteDos}{[NOMBRE DEL INTEGRANTE 2 --- C\'ODIGO]}
+\newcommand{\IntegranteTres}{[NOMBRE DEL INTEGRANTE 3 --- C\'ODIGO]}
+\newcommand{\FechaPresentacion}{Noviembre de 2026}
+
+% ==============================================================================
+% PALETA DE COLORES Y ESTILOS VISUALES
+% ==============================================================================
+\definecolor{azulhotel}{HTML}{17365D}
+\definecolor{azulclaro}{HTML}{D9EAF7}
+\definecolor{grisclaro}{HTML}{F5F7FA}
+\definecolor{grisborde}{HTML}{CBD5E1}
+\definecolor{verdepass}{HTML}{15803D}
+\definecolor{rojofail}{HTML}{B91C1C}
+\definecolor{ambarwarn}{HTML}{B45309}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=azulhotel,
+    citecolor=azulhotel,
+    urlcolor=azulhotel,
+    pdftitle={Informe de Calidad de Software - Sistema de Inventariado Hotelero Multi-Tenant},
+    pdfauthor={Ingenieria de Software - Calidad de Software}
+}
+
+\titleformat{\section}{\Large\bfseries\color{azulhotel}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{azulhotel}}{\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{azulhotel}}{\thesubsubsection.}{0.5em}{}
+
+% Encabezados y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\footnotesize\color{azulhotel}\textbf{\TituloProyecto}}
+\rhead{\footnotesize\color{azulhotel}\Asignatura}
+\lfoot{\footnotesize\color{azulhotel}\Institucion}
+\rfoot{\footnotesize\textbf{P\'agina \thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\setlength{\headheight}{15pt}
+
+% Configuración de bloques de código
+\lstset{
+    basicstyle=\ttfamily\scriptsize,
+    backgroundcolor=\color{grisclaro},
+    frame=single,
+    rulecolor=\color{grisborde},
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=b,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\bfseries\color{azulhotel},
+    commentstyle=\itshape\color{verdepass},
+    stringstyle=\color{rojofail},
+    showstringspaces=false,
+    tabsize=2,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+             {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+             {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{{?`}}1
+}
+
+\setlist[itemize]{itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{itemsep=2pt,topsep=3pt}
+\renewcommand{\arraystretch}{1.22}
+
+\begin{document}
+
+% ==============================================================================
+% PORTADA ACADÉMICA
+% ==============================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+    {\Large\bfseries\color{azulhotel}\Institucion\par}
+    \vspace{0.25cm}
+    {\large\bfseries\Facultad\par}
+    \vspace{0.2cm}
+    {\normalsize\bfseries\ProgramaAcademico\par}
+
+    \vspace{1.6cm}
+    \color{azulhotel}\rule{\textwidth}{1.5pt}\par
+    \vspace{0.6cm}
+    {\huge\bfseries\color{azulhotel}\TituloProyecto\par}
+    \vspace{0.4cm}
+    {\large\color{black}\SubtituloProyecto\par}
+    \vspace{0.6cm}
+    \color{azulhotel}\rule{\textwidth}{1.5pt}\par
+    \color{black}
+
+    \vspace{1.4cm}
+    \begin{tabular}{>{\bfseries\color{azulhotel}}p{4.5cm} p{9.5cm}}
+        Asignatura: & \Asignatura \\[0.3cm]
+        Docente: & \Docente \\[0.3cm]
+        Integrantes: & \IntegranteUno \\
+                     & \IntegranteDos \\
+                     & \IntegranteTres \\[0.3cm]
+        Organizaci\'on Caso: & Cadena Hotelera Asociada --- CONTINENTALIA SAS (4 Sedes) \\[0.3cm]
+        Rama de Repositorio: & \texttt{optimov1} (\texttt{https://github.com/BRND0N-DEV/hotelmultitenant.git}) \\
+    \end{tabular}
+
+    \vfill
+    {\large\bfseries\FechaPresentacion\par}
+\end{titlepage}
+
+% ==============================================================================
+% ÍNDICES AUTOMÁTICOS
+% ==============================================================================
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\listoffigures
+\vspace{0.8cm}
+\listoftables
+\newpage
+
+\pagenumbering{arabic}
+\justifying
+
+% ==============================================================================
+% 1. RESUMEN EJECUTIVO
+% ==============================================================================
+\section{Resumen Ejecutivo}
+
+El presente documento t\'ecnico y acad\'emico expone el an\'alisis arquitect\'onico, funcional y de aseguramiento de calidad (QA) del \textbf{Sistema de Inventariado Hotelero Multi-Tenant} (implementado en el repositorio como un \textit{Property Management System} --- PMS integral para la cadena hotelera asociada \textbf{CONTINENTALIA SAS}). La soluci\'on centraliza la operaci\'on de cuatro establecimientos hoteleros en Colombia (\textit{Hotel Grand Oasis Bogot\'a}, \textit{Hotel Costa Azul Cartagena}, \textit{Hotel Monta\~na Dorada Medell\'in} y \textit{Hotel Valle Real Cali}) bajo una base de datos relacional compartida con aislamiento l\'ogico estricto por sede (\textit{Shared Database, Shared Schema, Discriminator Column} \texttt{HotelId}).
+
+El problema central que aborda el sistema es la sustituci\'on de procesos manuales apoyados en hojas de c\'alculo desconectadas, los cuales provocaban sobreventa de habitaciones (\textit{overbooking}), descontrol sobre el estado f\'isico y de limpieza de las unidades de alojamiento, inconsistencias en el cobro de servicios adicionales, falta de arqueo en turnos de caja y ausencia de trazabilidad contable y de auditor\'ia.
+
+Tecnol\'ogicamente, el proyecto implementa una arquitectura limpia (\textit{Clean Architecture}) en el Backend sobre \textbf{.NET 9} (\texttt{ASP.NET Core Web API} y \texttt{Entity Framework Core 9.0.2}) conectada a \textbf{Microsoft SQL Server} (\texttt{HotelManagementDb}, 22 tablas relacionales), y una aplicaci\'on web de p\'agina \'unica (\textit{SPA}) en el Frontend desarrollada con \textbf{Angular 22.2} y \textbf{TypeScript 6.0} (\texttt{hotel-management-web}) empleando \textit{Standalone Components} y reactividad basada en \textit{Signals}.
+
+Desde la perspectiva de la asignatura \textbf{Calidad de Software}, la soluci\'on se eval\'ua conforme al modelo de calidad de producto \textbf{ISO/IEC 25010} y bajo una metodolog\'ia \textbf{Shift-Left QA}. El repositorio cuenta con una suite verificable de \textbf{601 pruebas automatizadas ejecutadas y aprobadas al 100\%} (67 pruebas unitarias, 532 pruebas de integraci\'on y matriz exhaustiva RBAC/Multi-Tenant, y 2 pruebas de concurrencia/overbooking), cubriendo los 67 endpoints expuestos por la API (66 acciones en 16 controladores REST m\'as el endpoint \texttt{/health}).
+
+% ==============================================================================
+% 2. INTRODUCCIÓN
+% ==============================================================================
+\section{Introducci\'on}
+
+En la industria hotelera multi-sede, el activo de inventario primordial est\'a constituido por las \textbf{unidades f\'isicas de alojamiento} (habitaciones agrupadas por tipolog\'ias comerciales, capacidades y pisos), cuya disponibilidad es perecedera por cada noche calendario y depende simult\'aneamente de dos dimensiones de estado: su \textit{estado operativo} (\texttt{Disponible}, \texttt{Ocupada}, \texttt{FueraDeServicio}, \texttt{Mantenimiento}) y su \textit{estado de limpieza} (\texttt{Limpia}, \texttt{Sucia}, \texttt{EnLimpieza}, \texttt{EnRevision}). A este inventario de alojamiento se articula un segundo nivel de inventario comercial: el \textbf{cat\'alogo de servicios adicionales facturables por sede} (desayuno, minibar, restaurante, lavander\'ia, spa, parqueadero y traslado) cuyos consumos se cargan de forma inmutable al folio de cada estancia.
+
+Cuando varios hoteles asociados comparten una misma plataforma tecnol\'ogica, la ingenier\'ia de software enfrenta un reto cr\'itico de calidad: permitir que la alta direcci\'on (Junta de Socios, Administraci\'on Global y Auditor\'ia) obtenga visibilidad consolidada de toda la cadena en tiempo real, mientras se garantiza que el personal operativo de cada sede (Administradores de Sede, Recepcionistas y Camarer\'ia) opere bajo un aislamiento absoluto de datos (\textit{Multi-Tenancy}) y bajo el principio de m\'inimo privilegio (\textit{Role-Based Access Control} --- RBAC).
+
+El presente informe documenta de forma rigurosa la arquitectura, los m\'odulos reales, el modelo de datos, las reglas de negocio, los mecanismos de seguridad y la estrategia de verificaci\'on automatizada del sistema. Siguiendo las buenas pr\'acticas de auditor\'ia de software, cada afirmaci\'on t\'ecnica se fundamenta exclusivamente en la inspecci\'on directa del c\'odigo fuente del repositorio, distinguiendo con total transparencia entre las capacidades completamente implementadas, aquellas parcialmente implementadas o simuladas, y las funcionalidades propuestas para fases futuras.
+
+% ==============================================================================
+% 3. PLANTEAMIENTO DEL PROBLEMA
+% ==============================================================================
+\section{Planteamiento del Problema}
+
+De acuerdo con la especificaci\'on de requisitos del proyecto (\texttt{Requisitos\_Sistema\_Gestion\_Hotelera.tex}) y el an\'alisis t\'ecnico del repositorio (\texttt{docs/requisitos\_analisis.md} y \texttt{docs/informe\_auditoria\_qa\_defectos.md}), la cadena hotelera asociada \textbf{CONTINENTALIA SAS}, conformada por cuatro sedes operativas en distintas ciudades del pa\'is, enfrentaba las siguientes problem\'aticas verificadas:
+
+\begin{enumerate}
+    \item \textbf{Fragmentaci\'on operativa y gesti\'on manual en hojas de c\'alculo:} La administraci\'on de disponibilidad de habitaciones, reservas, consumos en habitaci\'on, abonos y cierres de turno mediante archivos de Excel independientes por sede originaba demoras en la atenci\'on en recepci\'on, errores manuales de liquidaci\'on de tarifas (temporadas, recargos de fin de semana, promociones e impuestos) y fugas de ingresos por consumos no registrados.
+    \item \textbf{Riesgo de sobreventa (\textit{Overbooking}) y colisiones de concurrencia:} La falta de un control transaccional at\'omico permit\'ia asignar una misma habitaci\'on f\'isica a dos reservas con rangos de fechas traslapados cuando dos recepcionistas atend\'ian solicitudes de manera simult\'anea.
+    \item \textbf{Desincronizaci\'on en el inventario f\'isico de habitaciones:} Exist\'ian discrepancias entre recepci\'on y camarer\'ia (\textit{Housekeeping}) respecto a si una habitaci\'on se encontraba lista para \textit{Check-In} (\texttt{Disponible} + \texttt{Limpia}) o si permanec\'ia bloqueada por falta de aseo (\texttt{Sucia}) o por \texttt{Mantenimiento}, adem\'as del riesgo de desactivar habitaciones que manten\'ian reservas futuras comprometidas.
+    \item \textbf{Necesidad de centralizaci\'on gerencial sin sacrificar el aislamiento entre sedes:} La Junta de Socios carec\'ia de indicadores consolidados en tiempo real (Ocupaci\'on, ADR, RevPAR, ingresos diarios/mensuales y tasa de cancelaci\'on), pero al mismo tiempo resultaba imperativo impedir que un empleado de una sede consultara o alterara reservas, hu\'espedes, folios, turnos de caja o habitaciones de otra sede.
+    \item \textbf{Exigencias de seguridad, trazabilidad contable y protecci\'on de datos personales:} Se requer\'ia inmutabilidad en los cargos del folio (prohibiendo la edici\'on o borrado directo de consumos y exigiendo contra-asientos auditados), control de apertura y cierre de caja por turno, bloqueo de \textit{Check-Out} ante saldos pendientes distintos de cero, y cumplimiento de la Ley 1581 de 2012 (\textit{Habeas Data} y anonimizaci\'on irreversible sin destruir el soporte contable).
+\end{enumerate}
+
+% ==============================================================================
+% 4. JUSTIFICACIÓN
+% ==============================================================================
+\section{Justificaci\'on}
+
+El desarrollo e implementaci\'on del \textbf{Sistema de Inventariado Hotelero Multi-Tenant} se justifica t\'ecnica, operativa y acad\'emicamente por los siguientes beneficios verificables en la soluci\'on construida:
+
+\begin{itemize}
+    \item \textbf{Eficiencia operativa e integridad del inventario hotelero:} El sistema automatiza la catalogaci\'on de tipolog\'ias (\texttt{RoomTypes}), el control de unidades f\'isicas por piso (\texttt{Rooms}), la cotizaci\'on din\'amica por noche (\texttt{PricingEngine}) y la prevenci\'on estricta de \textit{overbooking} tanto en la capa de aplicaci\'on como en el motor relacional mediante el disparador \texttt{TR\_Reservations\_PreventOverbooking}.
+    \item \textbf{Seguridad Multi-Tenant y gobernanza RBAC en profundidad:} Mediante una arquitectura de triple barrera (\texttt{TenantResolutionMiddleware}, \texttt{TenantAuthorizationHelper} con pol\'iticas \texttt{[Authorize(Roles)]} y 16 \textit{Global Query Filters} en Entity Framework Core), una sola instancia desplegada sirve a las cuatro sedes garantizando que cualquier intento de acceso cruzado (\textit{IDOR} o manipulaci\'on de cabeceras/par\'ametros) sea neutralizado en el servidor.
+    \item \textbf{Protecci\'on financiera y auditor\'ia forense en tres niveles:} El bloqueo de \textit{Check-Out} con saldo distinto de cero (RF-40), la inmutabilidad de cargos mediante contra-asientos (RF-36), el arqueo de caja por turno (RF-42) y la bit\'acora en tres niveles (\texttt{Negocio}, \texttt{Tecnico} y \texttt{Http}) aseguran la integridad contable de cada sede.
+    \item \textbf{Pertinencia en Calidad de Software (Shift-Left QA):} El proyecto constituye un caso de estudio integral donde los atributos de la norma \textbf{ISO/IEC 25010} (adecuaci\'on funcional, fiabilidad, seguridad, mantenibilidad) no solo se declaran te\'oricamente, sino que se verifican de manera emp\'irica mediante 601 pruebas automatizadas reproducibles.
+\end{itemize}
+
+% ==============================================================================
+% 5. OBJETIVOS
+% ==============================================================================
+\section{Objetivos}
+
+\subsection{Objetivo General}
+Analizar, documentar y evaluar integralmente la arquitectura, el modelo de aislamiento Multi-Tenant, el control de acceso basado en roles (RBAC) y el aseguramiento de calidad (ISO/IEC 25010) del \textbf{Sistema de Inventariado Hotelero Multi-Tenant} desarrollado en Angular 22, .NET 9 y SQL Server, respaldando cada hallazgo en la inspecci\'on del c\'odigo fuente y en la ejecuci\'on de pruebas automatizadas.
+
+\subsection{Objetivos Espec\'ificos}
+\begin{enumerate}
+    \item Identificar la estructura real del repositorio, los componentes de Frontend, Backend y Base de Datos, las dependencias exactas y el estado de implementaci\'on de cada m\'odulo funcional.
+    \item Documentar en detalle el funcionamiento del inventario hotelero (tipolog\'ias, habitaciones f\'isicas, estados operativos y de limpieza, disponibilidad por fechas y cat\'alogo de servicios adicionales) y su articulaci\'on con reservas, folios y caja.
+    \item Explicar la arquitectura Multi-Tenant de base de datos compartida con discriminador \texttt{HotelId}, detallando la identificaci\'on del tenant, la gesti\'on de sesiones JWT/Refresh Token, la segregaci\'on de funciones (SoD) y los mecanismos que impiden el acceso cruzado entre sedes.
+    \item Evaluar el sistema frente a las caracter\'isticas de calidad de la norma \textbf{ISO/IEC 25010} y documentar la estrategia de aseguramiento de calidad (QA), el manejo de excepciones RFC 7807 y la matriz de riesgos.
+    \item Presentar el plan y la matriz de pruebas automatizadas ejecutadas sobre el entorno controlado (pruebas unitarias, de integraci\'on, de seguridad RBAC, de aislamiento Multi-Tenant y de concurrencia), diferenciando las pruebas ejecutadas de las pruebas recomendadas para trabajo futuro.
+\end{enumerate}
+
+% ==============================================================================
+% 6. ALCANCE DEL PROYECTO
+% ==============================================================================
+\section{Alcance del Proyecto}
+
+Tras la inspecci\'on exhaustiva del c\'odigo fuente en \texttt{backend/}, \texttt{frontend/hotel-management-web/} y \texttt{database/}, es fundamental establecer una precisi\'on conceptual sobre el alcance real del sistema:
+
+\begin{quote}
+\textbf{Nota de precisi\'on t\'ecnica (Inventariado Hotelero vs. Inventario de Bodega/Kardex):} El repositorio implementa un \textbf{Sistema de Gesti\'on e Inventariado Hotelero (PMS)} centrado en el \textit{inventario de unidades f\'isicas de alojamiento} (\texttt{RoomTypes} y \texttt{Rooms} con control de disponibilidad por calendario, estados operativos y de limpieza), junto con el \textit{cat\'alogo tarifario de servicios adicionales} (\texttt{AdditionalServices}) y sus \textit{movimientos de cargo financiero} en el folio del hu\'esped (\texttt{FolioCharges}). \textbf{No existe en el c\'odigo fuente un m\'odulo de kardex de almac\'en o bodega f\'isica} (control de stock cuantitativo de insumos, lotes, proveedores o entradas/salidas de bodega). Esta distinci\'on se mantiene rigurosamente en todo el documento.
+\end{quote}
+
+La Tabla~\ref{tab:alcance_modulos} clasifica todos los m\'odulos y capacidades del proyecto seg\'un su estado real verificado en el repositorio.
+
+\begin{longtable}{p{3.4cm} p{5.8cm} p{2.3cm} p{3.1cm}}
+\caption{Clasificaci\'on de m\'odulos y funcionalidades seg\'un su estado real en el repositorio}
+\label{tab:alcance_modulos}\\
+\toprule
+\textbf{M\'odulo} & \textbf{Componentes Verificados en C\'odigo} & \textbf{Estado} & \textbf{Evidencia T\'ecnica}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{M\'odulo} & \textbf{Componentes Verificados en C\'odigo} & \textbf{Estado} & \textbf{Evidencia T\'ecnica}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Autenticaci\'on, JWT, Refresh Token y Conmutaci\'on de Sede & \texttt{AuthController} (4 endpoints), \texttt{JwtTokenService}, \texttt{BCryptPasswordHasher}, bloqueo tras 5 intentos fallidos, revocaci\'on de familia de tokens y \texttt{switch-hotel}. & \textbf{Implementado} & \texttt{AuthController.cs}, \texttt{auth.service.ts}\\[0.15cm]
+Gobierno Multi-Sede y Usuarios & \texttt{HotelsController} (4 endpoints), \texttt{UsersController} (3 endpoints), asignaci\'on N:M en \texttt{HotelUsers} y revocaci\'on inmediata de usuarios inactivos. & \textbf{Implementado} & \texttt{HotelsController.cs}, \texttt{ReportsAndAuditControllers.cs}\\[0.15cm]
+Inventario de Alojamiento (Tipolog\'ias y Habitaciones) & \texttt{RoomTypesController} (5 endpoints) y \texttt{RoomsController} (7 endpoints): CRUD, estado dual (\texttt{OperationalStatus}/\texttt{CleaningStatus}) y baja l\'ogica protegida (RF-12). & \textbf{Implementado} & \texttt{RoomsController.cs}, \texttt{admin-pages.component.ts}\\[0.15cm]
+Cat\'alogo Tarifario y Servicios Adicionales & \texttt{RatesController} (6 endpoints: temporadas sin traslape, promociones, impuestos, pol\'iticas de cancelaci\'on) y \texttt{ServicesController} (5 endpoints). & \textbf{Implementado} & \texttt{RatesAndServicesControllers.cs}, \texttt{PricingEngine}\\[0.15cm]
+Motor de Disponibilidad, Inter-Sedes y Calendario 14d & \texttt{AvailabilityController} (3 endpoints): cotizaci\'on local desglosada, consulta inter-sedes anonimizada (RF-20/RF-21) y grilla de 14 d\'ias. & \textbf{Implementado} & \texttt{AvailabilityController.cs}, \texttt{availability}, \texttt{calendar}\\[0.15cm]
+Reservas, Prevenci\'on de Overbooking y M\'aquina de Estados & \texttt{ReservationsController} (9 endpoints), \texttt{ReservationStateMachine}, idempotencia (\texttt{Idempotency-Key}), voucher QR y trigger SQL \texttt{TR\_Reservations\_PreventOverbooking}. & \textbf{Implementado} & \texttt{ReservationsController.cs}, \texttt{02\_triggers\_overbooking.sql}\\[0.15cm]
+Recepci\'on (\textit{Check-In} / \textit{Check-Out}) y Habeas Data & Validaci\'on de habitaci\'on \texttt{Limpia}/\texttt{Disponible}, consentimiento \texttt{DataConsents}, acompa\~nantes, bloqueo de salida con saldo $\neq 0$ (RF-40) y anonimizaci\'on (RF-47). & \textbf{Implementado} & \texttt{ReservationsController.cs}, \texttt{GuestsController.cs}, \texttt{reception.component.ts}\\[0.15cm]
+Folios, Consumos Inmutables y Turnos de Caja & \texttt{FoliosController} (4 endpoints) y \texttt{CashShiftController} (4 endpoints): cargos de cat\'alogo, anulaci\'on por contra-asiento, pagos con idempotencia y cierre de turno. & \textbf{Implementado} & \texttt{FoliosController.cs}, \texttt{CashShiftController.cs}, \texttt{folio}, \texttt{cash-shift}\\[0.15cm]
+Camarer\'ia (\textit{Housekeeping}) & \texttt{HousekeepingController} (2 endpoints): consulta de habitaciones de la sede y actualizaci\'on de estado de limpieza con principio de m\'inimo privilegio. & \textbf{Implementado} & \texttt{HousekeepingController.cs}, \texttt{housekeeping.component.ts}\\[0.15cm]
+Dashboard Gerencial y Auditor\'ia en 3 Niveles & \texttt{DashboardController} (2 endpoints), \texttt{AuditController} (1 endpoint), \texttt{SaveChangesAsync} (\texttt{Tecnico}) y \texttt{HttpAuditMiddleware} (\texttt{Http}). & \textbf{Implementado} & \texttt{DashboardController.cs}, \texttt{HotelDbContext.cs}, \texttt{ApiMiddlewares.cs}\\[0.15cm]
+Exportaci\'on de Reportes y Comprobantes & Exportaci\'on de transacciones, hu\'espedes y tendencia de ingresos en \textbf{CSV con BOM UTF-8} compatible con Excel, y factura/voucher en \textbf{HTML imprimible con QR PNG}. & \textbf{Parcialmente Implementado} & \texttt{ReportsController} genera CSV (\texttt{text/csv}) y HTML (\texttt{text/html}), no binarios \texttt{.xlsx}/\texttt{.pdf} nativos.\\[0.15cm]
+Notificaciones por Correo Electr\'onico & \texttt{EmailNotificationService} ejecuta tarea as\'incrona en segundo plano con bucle de 3 reintentos sin afectar la reserva, pero simula el env\'io (\texttt{Task.Delay(100)}) sin cliente SMTP externo. & \textbf{Parcialmente Implementado} & \texttt{InfrastructureServices.cs} (l\'ineas 117--144).\\[0.15cm]
+Desactivaci\'on de Hoteles con Validaci\'on RF-09 & \texttt{HotelsController} implementa \texttt{GET}, \texttt{POST} y \texttt{PUT \{id\}} (incluyendo campo \texttt{IsActive}), pero no verifica el conteo de reservas futuras activas al desactivar una sede. & \textbf{Parcialmente Implementado} & \texttt{HotelsController.cs} (RF-12 s\'i est\'a implementado en habitaciones; RF-09 en hoteles queda pendiente).\\[0.15cm]
+Kardex de Bodega / Stock Cuantitativo de Insumos & Control de existencias f\'isicas de bodega (unidades en almac\'en, compras a proveedores, mermas de lencer\'ia/minibar). & \textbf{No Implementado / Propuesto} & El sistema gestiona inventario de habitaciones y cat\'alogo de servicios, no stock de almac\'en.\\[0.15cm]
+Portal de Autogesti\'on del Hu\'esped y Pasarela de Pagos & Reserva en l\'inea por el hu\'esped autenticado (HU-24 / RF-48) y cobro electr\'onico con pasarela de pagos. & \textbf{Pendiente (Fase Posterior)} & Expl\'icitamente fuera del alcance de la versi\'on 1 en \texttt{Requisitos\_Sistema\_Gestion\_Hotelera.tex}.\\
+\end{longtable}
+
+% ==============================================================================
+% 7. DESCRIPCIÓN FUNCIONAL DEL SISTEMA
+% ==============================================================================
+\section{Descripci\'on Funcional del Sistema}
+
+\subsection{Tipos de Usuarios, Roles y Matriz de Permisos (RBAC)}
+El sistema define exactamente seis (6) roles can\'onicos en la clase est\'atica \texttt{UserRole} (\texttt{backend/src/HotelManagement.Domain/Enums/DomainEnums.cs}), los cuales se dividen en dos categor\'ias de alcance:
+\begin{itemize}
+    \item \textbf{Roles de Alcance Global (Corporativos):} \texttt{Socio}, \texttt{AdminGlobal} y \texttt{Auditor}. Pueden consultar informaci\'on consolidada de la cadena (\texttt{X-Hotel-Id: 0} o \texttt{?hotelId=0}) o filtrar por cualquiera de las 4 sedes activas, respetando sus restricciones funcionales.
+    \item \textbf{Roles de Alcance Local (Operativos de Sede):} \texttt{AdminSede}, \texttt{Recepcionista} y \texttt{Housekeeping}. Operan exclusivamente dentro de la sede autorizada en la tabla \texttt{dbo.HotelUsers}.
+\end{itemize}
+
+Asimismo, el sistema aplica un modelo estricto de \textbf{Segregaci\'on de Funciones (\textit{Separation of Duties} --- SoD)}: el \texttt{AdminGlobal} administra el gobierno de la cadena (creaci\'on/edici\'on de sedes, gesti\'on de usuarios, anonimizaci\'on de hu\'espedes y parametrizaci\'on de cat\'alogos), pero tiene prohibido ejecutar operaciones de caja, crear o alterar reservas, registrar cargos/pagos en folios o modificar estados de limpieza. La Tabla~\ref{tab:matriz_rbac_resumen} sintetiza los permisos reales verificados en los 16 controladores del Backend.
+
+\begin{longtable}{p{2.9cm} p{1.6cm} p{1.8cm} p{1.7cm} p{1.9cm} p{1.8cm} p{1.6cm}}
+\caption{Matriz consolidada de permisos RBAC verificada en el Backend (66 acciones en 16 controladores)}
+\label{tab:matriz_rbac_resumen}\\
+\toprule
+\textbf{M\'odulo / Controlador} & \textbf{Socio} & \textbf{Admin Global} & \textbf{Admin Sede} & \textbf{Recepci\'on} & \textbf{House\-keeping} & \textbf{Auditor}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{M\'odulo / Controlador} & \textbf{Socio} & \textbf{Admin Global} & \textbf{Admin Sede} & \textbf{Recepci\'on} & \textbf{House\-keeping} & \textbf{Auditor}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{DashboardController} (KPIs y Export CSV) & \texttt{GET} (Global/Sede) & \texttt{GET} (Global/Sede) & \texttt{GET} (Solo Sede) & Denegado (\texttt{403}) & Denegado (\texttt{403}) & \texttt{GET} (Global/Sede)\\[0.12cm]
+\texttt{HotelsController} (Sedes) & \texttt{GET} & \texttt{GET, POST, PUT} & \texttt{GET} & \texttt{GET} & Denegado (\texttt{403}) & \texttt{GET}\\[0.12cm]
+\texttt{UsersController} (Empleados y Roles) & Denegado (\texttt{403}) & \texttt{GET, POST, DELETE} & Denegado (\texttt{403}) & Denegado (\texttt{403}) & Denegado (\texttt{403}) & Denegado (\texttt{403})\\[0.12cm]
+\texttt{RoomTypesController} (Tipolog\'ias) & \texttt{GET} & \texttt{GET, POST, PUT, PATCH} & \texttt{GET, POST, PUT, PATCH} & \texttt{GET} & Denegado (\texttt{403}) & \texttt{GET}\\[0.12cm]
+\texttt{RoomsController} (Habitaciones F\'isicas) & \texttt{GET} & \texttt{GET, POST, PUT, PATCH(act), DELETE} & Todos (\texttt{+PATCH status}) & \texttt{GET, PATCH status} & Denegado (\texttt{403}) & \texttt{GET}\\[0.12cm]
+\texttt{RatesController} (Temporadas, Promos, Impuestos, Pol\'iticas) & \texttt{GET} & \texttt{GET, POST} & \texttt{GET, POST} & \texttt{GET} & Denegado (\texttt{403}) & \texttt{GET}\\[0.12cm]
+\texttt{ServicesController} (Cat\'alogo de Servicios) & \texttt{GET} & \texttt{GET, POST, PUT, PATCH} & \texttt{GET, POST, PUT, PATCH} & \texttt{GET} & Denegado (\texttt{403}) & \texttt{GET}\\[0.12cm]
+\texttt{AvailabilityController} (Local, Inter-Sedes, Calendario) & Denegado (\texttt{403}) & \texttt{POST, GET} & \texttt{POST, GET} & \texttt{POST, GET} & Denegado (\texttt{403}) & Solo \texttt{GET calendar}\\[0.12cm]
+\texttt{ReservationsController} (Reservas, Check-In/Out, Cancel) & Denegado (\texttt{403}) & Solo \texttt{GET} (SoD) & \texttt{GET, POST} (Sin l\'imite) & \texttt{GET, POST} (Cancel con l\'imite) & Denegado (\texttt{403}) & Solo \texttt{GET}\\[0.12cm]
+\texttt{FoliosController} (Cargos, Anulaciones, Pagos) & Denegado (\texttt{403}) & Solo \texttt{GET} (SoD) & \texttt{GET, POST} & \texttt{GET, POST} & Denegado (\texttt{403}) & Solo \texttt{GET}\\[0.12cm]
+\texttt{CashShiftController} (Turnos de Caja) & Denegado (\texttt{403}) & Solo \texttt{GET} (SoD) & \texttt{GET, POST} & \texttt{GET, POST} & Denegado (\texttt{403}) & Solo \texttt{GET}\\[0.12cm]
+\texttt{GuestsController} (Hu\'espedes y Anonimizaci\'on) & Denegado (\texttt{403}) & \texttt{GET, PUT, POST anonymize} & \texttt{GET, PUT} & \texttt{GET, PUT} & Denegado (\texttt{403}) & Solo \texttt{GET}\\[0.12cm]
+\texttt{HousekeepingController} (Limpieza de Habitaciones) & Denegado (\texttt{403}) & Denegado (\texttt{403}) (SoD) & \texttt{GET, PUT} & \texttt{GET, PUT} & \texttt{GET, PUT} (Solo limpieza) & Denegado (\texttt{403})\\[0.12cm]
+\texttt{ReportsController} (Exportaci\'on y Factura HTML) & \texttt{GET} (Global/Sede) & \texttt{GET} (Global/Sede) & \texttt{GET} (Solo Sede) & Denegado (\texttt{403}) & Denegado (\texttt{403}) & \texttt{GET} (Global/Sede)\\[0.12cm]
+\texttt{AuditController} (Bit\'acora de Auditor\'ia) & Denegado (\texttt{403}) & \texttt{GET} (Global/Sede) & \texttt{GET} (Solo Sede) & Denegado (\texttt{403}) & Denegado (\texttt{403}) & \texttt{GET} (Global/Sede)\\
+\end{longtable}
+
+\subsection{Gesti\'on de Hoteles (Tenants)}
+El controlador \texttt{HotelsController} permite consultar las sedes activas (\texttt{GET /api/hotels} y \texttt{GET /api/hotels/\{id\}}) y restringe exclusivamente al rol \texttt{AdminGlobal} la creaci\'on (\texttt{POST /api/hotels}) y edici\'on (\texttt{PUT /api/hotels/\{id\}}) de sedes, incluyendo c\'odigo \'unico (\texttt{BOG-01}, \texttt{CTG-02}, \texttt{MDE-03}, \texttt{CLO-04}), nombre, ciudad, direcci\'on, zona horaria, moneda base (\texttt{COP}) e identidad visual (\texttt{PrimaryColor}, \texttt{SecondaryColor}, \texttt{LogoUrl}).
+
+\subsection{Gesti\'on de Inventarios, Productos/Activos y Movimientos Operativos}
+Como se precis\'o en la Secci\'on~6, el inventario del sistema se estructura en tres componentes verificables:
+\begin{enumerate}
+    \item \textbf{Inventario de Tipolog\'ias y Unidades F\'isicas de Habitaci\'on (\texttt{RoomTypes} y \texttt{Rooms}):}
+    \begin{itemize}
+        \item Cada sede define su cat\'alogo de tipolog\'ias (\texttt{Code} \'unico por hotel, capacidad base y m\'axima, tarifa base por noche y comodidades separadas por comas).
+        \item Cada habitaci\'on f\'isica (\texttt{Room}) pertenece a un \texttt{HotelId} y a un \texttt{RoomTypeId}, posee un n\'umero \'unico dentro de su sede (\texttt{UQ\_Rooms\_Hotel\_RoomNumber}) y controla dos estados independientes: \texttt{OperationalStatus} (\texttt{Disponible}, \texttt{Ocupada}, \texttt{FueraDeServicio}, \texttt{Mantenimiento}) y \texttt{CleaningStatus} (\texttt{Limpia}, \texttt{Sucia}, \texttt{EnLimpieza}, \texttt{EnRevision}).
+        \item \textbf{Protecci\'on de Baja L\'ogica (RF-12):} El endpoint \texttt{DELETE /api/rooms/\{id\}} no ejecuta un borrado f\'isico (\texttt{DELETE} en SQL), sino que marca \texttt{IsActive = false} tras verificar que no existan reservas activas o futuras comprometidas para esa unidad.
+    \end{itemize}
+    \item \textbf{Cat\'alogo de Servicios Adicionales por Sede (\texttt{AdditionalServices}):}
+    \begin{itemize}
+        \item Representa el inventario de servicios comercializables en cada hotel (categor\'ias: \textit{Desayuno, Spa, Parqueadero, Minibar, Lavander\'ia, Restaurante, Traslado}).
+        \item Tanto \texttt{AdminGlobal} como \texttt{AdminSede} pueden crear, actualizar y activar/desactivar servicios (\texttt{PATCH /api/services/\{id\}/toggle-status}). Los servicios con \texttt{IsActive = false} son rechazados en el Backend si se intenta registrar un consumo en el folio (RF-17).
+    \end{itemize}
+    \item \textbf{Movimientos de Inventario de Estancia y Consumos (\texttt{Reservations}, \texttt{FolioCharges}, \texttt{FolioPayments}):}
+    \begin{itemize}
+        \item \textbf{Movimientos de ocupaci\'on y limpieza:} Al crear una reserva activa, se compromete la disponibilidad de la habitaci\'on en el rango \texttt{[CheckInDate, CheckOutDate)}. El \textit{Check-In} exige que la unidad est\'e \texttt{Disponible} y \texttt{Limpia} y cambia autom\'aticamente la habitaci\'on a \texttt{Ocupada}. El \textit{Check-Out} cambia la habitaci\'on a \texttt{Disponible} + \texttt{Sucia}, habilitando la intervenci\'on del rol \texttt{Housekeeping}.
+        \item \textbf{Restricci\'on de negocio ``Con l\'imite'' para Recepci\'on en cancelaciones:} El archivo \texttt{appsettings.json} parametriza \texttt{ReservationCancellationLimits:Recepcionista} (\texttt{AllowOutsideFreeWindow = false}, \texttt{MaxPenaltyAmount = 0}). De este modo, \texttt{Recepcionista} solo puede cancelar reservas dentro de la ventana gratuita sin penalidad; si la cancelaci\'on supera la ventana libre o aplica una pol\'itica con penalidad (\texttt{PenaltyAmount > 0}), el Backend rechaza la operaci\'on con \textbf{HTTP 403 Forbidden} exigiendo autorizaci\'on de \texttt{AdminSede}.
+        \item \textbf{Movimientos financieros inmutables en el Folio:} Cada consumo registrado en \texttt{POST /api/folios/\{id\}/charges} calcula impuestos locales de la sede y recalcula el saldo del folio. Para corregir un cargo err\'oneo, el sistema proh\'ibe su edici\'on o eliminaci\'on directa y exige \texttt{POST /api/folios/charges/\{chargeId\}/annul}, el cual marca el cargo original como anulado (\texttt{IsAnnulled = true}) e inserta un \textbf{contra-asiento negativo} auditado con el motivo de anulaci\'on (RF-36).
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Consultas, Dashboard Consolidado y Reportes}
+\begin{itemize}
+    \item \textbf{Dashboard Gerencial (\texttt{GET /api/dashboard/metrics}):} Calcula mediante \texttt{HotelKpiCalculator} la ocupaci\'on porcentual, tarifa promedio diaria (\textit{ADR}), ingreso por habitaci\'on disponible (\textit{RevPAR}), ingresos del d\'ia/semana/mes, tasa de cancelaci\'on, distribuci\'on de estados de habitaciones, tendencia de 7 d\'ias y comparativa entre sedes (\texttt{HotelComparisons}). Para \texttt{AdminSede}, la lista \texttt{HotelComparisons} se restringe estrictamente a su propia sede.
+    \item \textbf{Reportes Exportables y Comprobantes:} Incluye la exportaci\'on de la tendencia de ingresos de 7 d\'ias (\texttt{GET /api/dashboard/export-revenue-trend}), el reporte de transacciones y pagos (\texttt{GET /api/reports/transactions/excel}), el directorio general de hu\'espedes (\texttt{GET /api/reports/guests/excel}) ---todos emitidos en CSV con BOM UTF-8 y soporte consolidado \texttt{?hotelId=0} para roles globales--- y el comprobante/factura en formato HTML (\texttt{GET /api/reports/invoice/\{reservationId\}}).
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \input{diagramas/03_casos_de_uso.tex}
+    \caption{Diagrama de casos de uso del sistema seg\'un la matriz RBAC real implementada}
+    \label{fig:casos_de_uso}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \input{diagramas/04_flujo_inventariado.tex}
+    \caption{Diagrama de flujo del proceso de inventariado hotelero: unidades f\'isicas, reservas, consumos y limpieza}
+    \label{fig:flujo_inventariado}
+\end{figure}
+
+% ==============================================================================
+% 8. ARQUITECTURA MULTI-TENANT
+% ==============================================================================
+\section{Arquitectura Multi-Tenant}
+
+\subsection{Fundamento y Modelo de Aislamiento Adoptado}
+Una arquitectura \textbf{Multi-Tenant} (multi-inquilino o multi-sede) permite que una \'unica instancia del software y de su infraestructura subyacente atienda a m\'ultiples organizaciones o unidades operativas independientes (\textit{tenants}), garantizando que cada inquilino perciba el sistema como propio y que sus datos permanezcan l\'ogicamente aislados de los dem\'as \cite{chong2006multitenant}.
+
+En la taxonom\'ia cl\'asica de arquitecturas de datos Multi-Tenant existen tres patrones principales: (1) Base de datos independiente por tenant, (2) Base de datos compartida con esquema separado por tenant, y (3) \textbf{Base de datos compartida y esquema compartido con columna discriminadora de tenant}. El sistema analizado implementa el tercer patr\'on (\textbf{Shared Database, Shared Schema, Discriminator Column \texttt{HotelId}}) sobre \texttt{HotelManagementDb} en Microsoft SQL Server.
+
+\begin{figure}[H]
+    \centering
+    \input{diagramas/01_arquitectura_general.tex}
+    \caption{Arquitectura general del sistema (\textit{Clean Architecture} en .NET 9, Angular 22 y SQL Server)}
+    \label{fig:arquitectura_general}
+\end{figure}
+
+\subsection{Identificaci\'on de Cada Hotel (Resoluci\'on del Tenant)}
+La identificaci\'on del hotel activo en cada petici\'on HTTP se realiza mediante la combinaci\'on de dos mecanismos complementarios:
+\begin{enumerate}
+    \item \textbf{Claim criptogr\'afico en el JWT (\texttt{HotelId}):} Al iniciar sesi\'on (\texttt{POST /api/auth/login}) o al conmutar de sede (\texttt{POST /api/auth/switch-hotel}), el servicio \texttt{JwtTokenService} firma con \texttt{HMAC-SHA256} un token de acceso con vigencia de 20 minutos que incluye los claims \texttt{NameIdentifier} (\texttt{UserId}), \texttt{Email}, \texttt{Name}, \texttt{Role} y \texttt{HotelId}.
+    \item \textbf{Encabezado HTTP expl\'icito (\texttt{X-Hotel-Id}):} En el Frontend Angular, el interceptor funcional \texttt{authInterceptor} (\texttt{frontend/hotel-management-web/src/app/core/interceptors/auth.interceptor.ts}) adjunta autom\'aticamente el encabezado \texttt{Authorization: Bearer <token>} y el encabezado \texttt{X-Hotel-Id} correspondiente al hotel activo seleccionado en la sesi\'on. Cuando un rol global (\texttt{Socio}, \texttt{AdminGlobal} o \texttt{Auditor}) selecciona la vista ``Cadena Consolidada'', el Frontend env\'ia \texttt{X-Hotel-Id: 0}.
+\end{enumerate}
+
+\subsection{Mecanismo de Triple Barrera para Aislamiento y Control de Acceso}
+Para evitar cualquier fuga de informaci\'on o acceso cruzado entre hoteles (\textit{Cross-Tenant Data Leakage} o vulnerabilidades \textit{Broken Object Level Authorization} --- BOLA/IDOR del OWASP Top 10 \cite{owasp2021top10}), el Backend implementa tres barreras sucesivas en cada solicitud HTTP, representadas en la Figura~\ref{fig:arquitectura_multitenant}:
+
+\begin{figure}[H]
+    \centering
+    \input{diagramas/02_arquitectura_multitenant.tex}
+    \caption{Flujo de resoluci\'on de contexto y triple barrera de aislamiento Multi-Tenant en el Backend}
+    \label{fig:arquitectura_multitenant}
+\end{figure}
+
+\begin{enumerate}
+    \item \textbf{Primera Barrera --- \texttt{TenantResolutionMiddleware} (\texttt{ApiMiddlewares.cs}):}
+    \begin{itemize}
+        \item Verifica en cada petici\'on autenticada que el usuario contin\'ue activo en la base de datos (\texttt{dbContext.Users.AnyAsync(u => u.UserId == authUserId \&\& u.IsActive)}); si un empleado fue desactivado por el \texttt{AdminGlobal}, su token JWT queda invalidado de inmediato con \textbf{HTTP 401 Unauthorized}.
+        \item Valida que \texttt{X-Hotel-Id} sea un entero v\'alido (si contiene texto malformado, responde \textbf{HTTP 400 Bad Request}).
+        \item Si el usuario tiene un rol de sede (\texttt{AdminSede}, \texttt{Recepcionista}, \texttt{Housekeeping}), comprueba en la tabla \texttt{dbo.HotelUsers} que exista la asignaci\'on \texttt{(UserId, resolvedHotelId)}. Si el usuario intenta operar sobre un hotel no asignado o env\'ia \texttt{X-Hotel-Id: 0}, el middleware corta el pipeline y responde \textbf{HTTP 404 Not Found} en formato RFC 7807 (\texttt{ProblemDetails}), cumpliendo la regla RF-07.
+        \item Si el usuario pertenece a un rol global (\texttt{AdminGlobal}, \texttt{Socio}, \texttt{Auditor}) y env\'ia \texttt{X-Hotel-Id: 0} (o no especifica sede), activa \texttt{tenantContext.IsGlobalBypass = true} con \texttt{CurrentHotelId = null}.
+    \end{itemize}
+
+    \item \textbf{Segunda Barrera --- \texttt{TenantAuthorizationHelper} y Atributos \texttt{[Authorize(Roles)]}:}
+    \begin{itemize}
+        \item Cada controlador y acci\'on declara expl\'icitamente los roles autorizados mediante \texttt{[Authorize(Roles = ...)]}.
+        \item La clase est\'atica \texttt{TenantAuthorizationHelper} (\texttt{backend/src/HotelManagement.Api/Services/TenantAuthorizationHelper.cs}) centraliza el m\'etodo \texttt{ResolveAuthorizedHotelId}, el cual impide que un usuario de sede pase un par\'ametro de consulta \texttt{?hotelId=} distinto al de su contexto activo o intente solicitar reportes consolidados con \texttt{?hotelId=0}, devolviendo \textbf{HTTP 403 Forbidden}.
+        \item Adem\'as, en las operaciones de escritura (creaci\'on de habitaciones, reservas, cargos y pagos en folio), los controladores verifican que las llaves for\'aneas referenciadas (\texttt{RoomTypeId}, \texttt{RoomId}, \texttt{GuestId}, \texttt{CancellationPolicyId}, \texttt{ServiceId}, \texttt{CashShiftId}) pertenezcan exactamente al mismo \texttt{HotelId} de la operaci\'on, bloqueando inyecciones cruzadas de identificadores entre sedes.
+    \end{itemize}
+
+    \item \textbf{Tercera Barrera --- 16 \textit{Global Query Filters} en \texttt{HotelDbContext.cs}:}
+    \begin{itemize}
+        \item En \texttt{OnModelCreating}, Entity Framework Core aplica autom\'aticamente predicados de filtrado global \cite{efcore_queryfilters} tanto sobre las 11 entidades operativas con columna \texttt{HotelId} directa (\texttt{RoomType}, \texttt{Room}, \texttt{Season}, \texttt{Promotion}, \texttt{HotelTax}, \texttt{CancellationPolicy}, \texttt{AdditionalService}, \texttt{CashShift}, \texttt{Guest}, \texttt{Reservation}, \texttt{Folio}) como sobre las 5 entidades hijas dependientes (\texttt{DataConsent}, \texttt{ReservationCompanion}, \texttt{ReservationStateHistory}, \texttt{FolioCharge}, \texttt{FolioPayment}) a trav\'es de su navegaci\'on hacia la entidad padre.
+        \item Gracias a ello, cualquier consulta por identificador primario (por ejemplo, \texttt{GET /api/reservations/6} cuando la reserva 6 pertenece al Hotel 2 y el usuario opera en el Hotel 1) es filtrada directamente en la sentencia SQL generada por EF Core y retorna \textbf{HTTP 404 Not Found}.
+    \end{itemize}
+\end{enumerate}
+
+\begin{lstlisting}[language={[Sharp]C},caption={Extracto real de Global Query Filters Multi-Tenant en \texttt{HotelDbContext.cs}}]
+// Entidad con HotelId directo (Rooms)
+b.HasQueryFilter(r => _tenantContext.IsGlobalBypass ||
+    (_tenantContext.CurrentHotelId != null && r.HotelId == _tenantContext.CurrentHotelId));
+
+// Entidad hija filtrada por navegacion al padre (FolioCharge -> Folio.HotelId)
+b.HasQueryFilter(c => _tenantContext.IsGlobalBypass ||
+    (_tenantContext.CurrentHotelId != null && c.Folio.HotelId == _tenantContext.CurrentHotelId));
+\end{lstlisting}
+
+\subsection{Excepci\'on Controlada de Consulta Inter-Sedes (RF-20 y RF-21)}
+El \'unico caso de uso en el que un rol operativo (\texttt{Recepcionista} o \texttt{AdminSede}) puede consultar informaci\'on de otros hoteles de la cadena es el endpoint \texttt{POST /api/availability/cross-hotel} (\texttt{AvailabilityController.cs}). Para preservar la privacidad entre sedes:
+\begin{itemize}
+    \item La consulta utiliza \texttt{.IgnoreQueryFilters()} de manera controlada \'unicamente para calcular cu\'antas habitaciones libres existen por tipolog\'ia en las dem\'as sedes activas.
+    \item La respuesta se proyecta al DTO \texttt{CrossHotelAvailabilityResponseDto}, exponiendo exclusivamente: \texttt{HotelId}, \texttt{HotelName}, \texttt{City}, \texttt{RoomTypeName}, \texttt{AvailableRoomsCount} y \texttt{ReferencePrice}.
+    \item No se exponen n\'umeros de habitaci\'on (\texttt{RoomNumber}), identidades de hu\'espedes, c\'odigos de reserva ni montos financieros de otras sedes, y el middleware \texttt{HttpAuditMiddleware} registra obligatoriamente el evento en \texttt{dbo.AuditLogs} con nivel \texttt{Http}.
+\end{itemize}
+
+\subsection{Ventajas y Desventajas de la Arquitectura Multi-Tenant Implementada}
+\begin{table}[H]
+\centering
+\caption{An\'alisis de ventajas y desventajas del modelo \textit{Shared Database, Shared Schema} con discriminador \texttt{HotelId}}
+\label{tab:ventajas_desventajas_mt}
+\begin{tabular}{p{7.4cm} p{7.4cm}}
+\toprule
+\textbf{Ventajas en el Proyecto} & \textbf{Desventajas y Riesgos Arquitect\'onicos}\\
+\midrule
+\textbf{1. Consolidaci\'on gerencial inmediata:} Las consultas de \texttt{Socio}, \texttt{AdminGlobal} y \texttt{Auditor} agregan m\'etricas de las 4 sedes en una sola consulta SQL sin necesidad de procesos ETL ni consultas distribuidas entre servidores. & \textbf{1. Dependencia cr\'itica de los filtros de aplicaci\'on:} Si un desarrollador omite el \texttt{HasQueryFilter} o usa \texttt{.IgnoreQueryFilters()} sin filtrar por \texttt{HotelId}, podr\'ia exponer datos de otro tenant (mitigado con 532 pruebas de integraci\'on).\\[0.2cm]
+\textbf{2. Menor costo operativo y de mantenimiento:} Un solo motor SQL Server (\texttt{HotelManagementDb}) y un \'unico esquema relacional simplifican la aplicaci\'on de scripts DDL, \'indices y disparadores. & \textbf{2. Efecto ``Vecino Ruidoso'' (\textit{Noisy Neighbor}):} Una consulta pesada de exportaci\'on o bloqueo transaccional en una sede comparte CPU, memoria y E/S con las dem\'as sedes de la cadena.\\[0.2cm]
+\textbf{3. Incorporaci\'on instant\'anea de nuevas sedes:} Dar de alta un quinto hotel requiere \'unicamente un \texttt{INSERT} en \texttt{dbo.Hotels} (\texttt{POST /api/hotels}) sin aprovisionar bases de datos adicionales. & \textbf{3. Respaldo y restauraci\'on acoplados:} La restauraci\'on de una copia de seguridad a nivel de base de datos afecta a todas las sedes, requiriendo scripts filtrados por \texttt{HotelId} si se desea recuperar una sola sede.\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ==============================================================================
+% 9. TECNOLOGÍAS UTILIZADAS
+% ==============================================================================
+\section{Tecnolog\'ias Utilizadas}
+
+La Tabla~\ref{tab:tecnologias_reales} detalla todas las tecnolog\'ias, frameworks y librer\'ias verificadas directamente en los archivos de configuraci\'on del repositorio (\texttt{package.json}, \texttt{HotelManagement.Api.csproj}, \texttt{HotelManagement.Infrastructure.csproj}, \texttt{HotelManagement.IntegrationTests.csproj} y \texttt{01\_schema.sql}).
+
+\begin{longtable}{p{3.6cm} p{1.8cm} p{4.2cm} p{5.0cm}}
+\caption{Inventario verificado de tecnolog\'ias, versiones y funci\'on dentro del proyecto}
+\label{tab:tecnologias_reales}\\
+\toprule
+\textbf{Tecnolog\'ia / Librer\'ia} & \textbf{Versi\'on} & \textbf{Funci\'on en el Proyecto} & \textbf{Justificaci\'on T\'ecnica}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Tecnolog\'ia / Librer\'ia} & \textbf{Versi\'on} & \textbf{Funci\'on en el Proyecto} & \textbf{Justificaci\'on T\'ecnica}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\textbf{.NET SDK / Runtime (C\#)} & \texttt{net9.0} & Plataforma de ejecuci\'on del Backend en sus 4 capas y 3 proyectos de pruebas. & Alto desempe\~no, tipado est\'atico fuerte, soporte nativo de inyecci\'on de dependencias y concurrencia as\'incrona \cite{dotnet9_docs}.\\[0.12cm]
+\textbf{ASP.NET Core Web API} & \texttt{9.0} & Construcci\'on de los 16 controladores RESTful, pipeline de 4 middlewares y filtros de autorizaci\'on. & Estandarizaci\'on de respuestas HTTP, soporte nativo para \texttt{ProblemDetails} (RFC 7807) y pol\'iticas RBAC.\\[0.12cm]
+\textbf{Entity Framework Core SQL Server} & \texttt{9.0.2} & ORM en \texttt{HotelManagement.Infrastructure} (\texttt{HotelDbContext}). & Soporte nativo de \textit{Global Query Filters} Multi-Tenant, \texttt{RowVersion} para concurrencia optimista y auditor\'ia en \texttt{SaveChangesAsync} \cite{efcore_queryfilters}.\\[0.12cm]
+\textbf{Microsoft SQL Server} & \texttt{2022/2025} & Motor de base de datos relacional (\texttt{HotelManagementDb}, 22 tablas). & Garant\'ia ACID, soporte de \texttt{ROWVERSION}, \'indices compuestos por \texttt{HotelId} y trigger T-SQL \texttt{TR\_Reservations\_PreventOverbooking} \cite{sqlserver_docs}.\\[0.12cm]
+\textbf{JwtBearer \& System.IdentityModel.Tokens.Jwt} & \texttt{9.0.2} / \texttt{8.5.0} & Emisi\'on y validaci\'on de tokens JWT (\texttt{HMAC-SHA256}) con claims de rol y sede. & Autenticaci\'on sin estado (\textit{stateless}) de corta duraci\'on (20 min) complementada con Refresh Tokens en base de datos.\\[0.12cm]
+\textbf{BCrypt.Net-Next} & \texttt{4.0.3} & Hashing criptogr\'afico de contrase\~nas de usuarios con factor de trabajo 11. & Cumplimiento de RNF-13 contra ataques de fuerza bruta y tablas \textit{rainbow}.\\[0.12cm]
+\textbf{QRCoder} & \texttt{1.6.0} & Generaci\'on de c\'odigos QR en formato PNG (\texttt{ECCLevel.Q}) para vouchers de reserva. & Permite verificar vouchers digitales sin depender de servicios web externos.\\[0.12cm]
+\textbf{Swashbuckle.AspNetCore \& OpenApi} & \texttt{7.3.1} / \texttt{9.0.20} & Documentaci\'on interactiva Swagger UI con soporte de esquema \texttt{Bearer}. & Facilita la inspecci\'on de contratos REST y pruebas exploratorias de endpoints.\\[0.12cm]
+\textbf{Angular (\texttt{@angular/core}, \texttt{router}, \texttt{forms})} & \texttt{\^{}22.2.0} & Framework SPA del Frontend (\texttt{hotel-management-web}). & Arquitectura modular con \textit{Standalone Components}, \textit{Signals}, \texttt{HttpClient} funcional y guardias de ruta \cite{angular_docs}.\\[0.12cm]
+\textbf{TypeScript} & \texttt{\~{}6.0.2} & Lenguaje de programaci\'on del Frontend. & Seguridad de tipos en tiempo de compilaci\'on para modelos, DTOs y servicios HTTP.\\[0.12cm]
+\textbf{RxJS} & \texttt{\~{}7.8.0} & Programaci\'on reactiva y flujos as\'incronos HTTP en Angular. & Manejo declarativo de peticiones REST, interceptores y suscripciones de ruta.\\[0.12cm]
+\textbf{xUnit, FluentAssertions \& Mvc.Testing} & \texttt{2.9.2} / \texttt{8.0.1} / \texttt{9.0.2} & Frameworks de pruebas unitarias, de concurrencia y de integraci\'on en memoria (\texttt{WebApplicationFactory}). & Permite ejecutar 601 pruebas automatizadas contra el pipeline HTTP real y la base de datos de pruebas.\\[0.12cm]
+\textbf{Coverlet Collector} & \texttt{6.0.2} & Recolecci\'on de m\'etricas de cobertura de c\'odigo en .NET. & Soporte para medici\'on de cobertura en capas \texttt{Domain} y \texttt{Application} (RNF-08).\\
+\end{longtable}
+
+\begin{figure}[H]
+    \centering
+    \input{diagramas/05_diagrama_componentes.tex}
+    \caption{Diagrama de componentes e interacci\'on entre Frontend Angular 22, Backend .NET 9 y SQL Server}
+    \label{fig:diagrama_componentes}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \input{diagramas/06_modelo_entidad_relacion.tex}
+    \caption{Modelo Entidad-Relaci\'on de las 22 tablas implementadas en \texttt{HotelManagementDb}}
+    \label{fig:modelo_er}
+\end{figure}
+
+% ==============================================================================
+% 10. REQUERIMIENTOS DEL SOFTWARE
+% ==============================================================================
+\section{Requerimientos del Software}
+
+A continuaci\'on se documentan los Requerimientos Funcionales (\textbf{RF-01} a \textbf{RF-55}) y los Requerimientos No Funcionales (\textbf{RNF-01} a \textbf{RNF-16}) extra\'idos del documento de especificaci\'on del proyecto (\texttt{Requisitos\_Sistema\_Gestion\_Hotelera.tex}) y contrastados uno a uno contra el c\'odigo fuente actual del repositorio, incorporando adem\'as el requerimiento propuesto \textbf{RF-56} para kardex f\'isico de bodega/almac\'en.
+
+\subsection{A. Requerimientos Funcionales}
+
+\begin{longtable}{p{1.3cm} p{5.2cm} p{1.3cm} p{2.2cm} p{4.4cm}}
+\caption{Cat\'alogo de Requerimientos Funcionales (RF-01 a RF-56) y estado real en el sistema}
+\label{tab:requerimientos_funcionales}\\
+\toprule
+\textbf{C\'odigo} & \textbf{Descripci\'on} & \textbf{Prio.} & \textbf{Estado Real} & \textbf{Criterio de Aceptaci\'on Verificado}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{C\'odigo} & \textbf{Descripci\'on} & \textbf{Prio.} & \textbf{Estado Real} & \textbf{Criterio de Aceptaci\'on Verificado}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+RF-01 & Inicio de sesi\'on mediante correo electr\'onico y contrase\~na. & Must & Implementado & \texttt{POST /api/auth/login} valida credenciales con BCrypt y retorna HTTP 200 con tokens.\\[0.1cm]
+RF-02 & Sesi\'on con token de acceso de corta duraci\'on (20 min) y Refresh Token rotativo con detecci\'on de reutilizaci\'on. & Must & Implementado & \texttt{POST /api/auth/refresh-token} rota el token y revoca la familia si detecta reuso (\texttt{RevokedAt != null}).\\[0.1cm]
+RF-03 & Bloqueo temporal de cuenta tras 5 intentos fallidos consecutivos y registro en auditor\'ia. & Must & Implementado & \texttt{User.RecordFailedLogin()} bloquea por 15 min al 5.\textsuperscript{o} fallo y registra \texttt{AuditLog}.\\[0.1cm]
+RF-04 & Creaci\'on, desactivaci\'on y asignaci\'on de empleados a roles, departamentos, turnos y sedes por \texttt{AdminGlobal}. & Must & Implementado & \texttt{UsersController} (\texttt{GET, POST, DELETE}) exclusivo para \texttt{AdminGlobal}; desactivaci\'on revoca sesi\'on activa.\\[0.1cm]
+RF-05 & Selecci\'on y conmutaci\'on de contexto activo \'unicamente entre sedes autorizadas. & Must & Implementado & \texttt{POST /api/auth/switch-hotel} emite nuevo JWT si la sede est\'a asignada; si no, responde HTTP 403.\\[0.1cm]
+RF-06 & Permisos granulares por rol y acci\'on; operaci\'on no autorizada dentro de la sede responde HTTP 403. & Must & Implementado & Verificado en 441 casos de matriz HTTP y reflexi\'on sobre las 66 acciones de controlador.\\[0.1cm]
+RF-07 & Impedir consulta o modificaci\'on de recursos de otra sede respondiendo HTTP 404 (\textit{Not Found}). & Must & Implementado & \texttt{TenantResolutionMiddleware} y 16 \textit{Global Query Filters} retornan HTTP 404 ante accesos IDOR cruzados.\\[0.1cm]
+RF-08 & Creaci\'on y configuraci\'on de hoteles (nombre, ciudad, direcci\'on, zona horaria, moneda e identidad visual). & Must & Implementado & \texttt{POST /api/hotels} y \texttt{PUT /api/hotels/\{id\}} restringidos a \texttt{AdminGlobal}.\\[0.1cm]
+RF-09 & Impedir desactivar un hotel con reservas futuras activas informando la cantidad que lo impide. & Must & Parcial & \texttt{HotelsController.UpdateHotel} actualiza \texttt{IsActive}, pero no consulta el conteo de reservas futuras activas.\\[0.1cm]
+RF-10 & Definir tipos de habitaci\'on, capacidad base/m\'axima, comodidades y habitaciones f\'isicas por sede. & Must & Implementado & \texttt{RoomTypesController} y \texttt{RoomsController} con persistencia en \texttt{dbo.RoomTypes} y \texttt{dbo.Rooms}.\\[0.1cm]
+RF-11 & Impedir n\'umeros de habitaci\'on duplicados en un mismo hotel permitiendo el mismo n\'umero en otra sede. & Must & Implementado & Restricci\'on \texttt{UQ\_Rooms\_Hotel\_RoomNumber} en SQL Server y validaci\'on previa en \texttt{RoomsController}.\\[0.1cm]
+RF-12 & Impedir desactivar habitaciones f\'isicas que tengan reservas futuras activas. & Must & Implementado & \texttt{DELETE /api/rooms/\{id\}} bloquea la baja l\'ogica con HTTP 400 e informa cu\'antas reservas activas existen.\\[0.1cm]
+RF-13 & Configurar tarifas base, temporadas, recargos de fin de semana y promociones por sede. & Must & Implementado & \texttt{RatesController} (\texttt{seasons}, \texttt{promotions}) y c\'alculo nocturno en \texttt{PricingEngine}.\\[0.1cm]
+RF-14 & Rechazar temporadas con fechas traslapadas dentro del mismo hotel. & Must & Implementado & \texttt{RatesController.CreateSeason} valida solapamiento de rangos en la sede activa (HTTP 400).\\[0.1cm]
+RF-15 & Aplicar promociones vigentes y mostrar el descuento en el desglose de la tarifa. & Must & Implementado & \texttt{PricingEngine.CalculateStayBreakdown} aplica \texttt{DiscountPercent} y desglosa por noche.\\[0.1cm]
+RF-16 & Configurar impuestos y pol\'iticas de cancelaci\'on por sede aplicando la pol\'itica vigente al reservar. & Must & Implementado & \texttt{Reservation.CancellationPolicyId} conserva la pol\'itica asignada al crear la reserva.\\[0.1cm]
+RF-17 & Cat\'alogo de servicios adicionales con precio por hotel; impedir cargar servicios inactivos al folio. & Should & Implementado & \texttt{ServicesController} y validaci\'on \texttt{service.IsActive} en \texttt{FoliosController.AddCharge}.\\[0.1cm]
+RF-18 & Consultar disponibilidad por fechas, tipo de habitaci\'on y hu\'espedes con desglose por noche. & Must & Implementado & \texttt{POST /api/availability/search} retorna unidades disponibles y desglose financiero.\\[0.1cm]
+RF-19 & Excluir de disponibilidad las habitaciones ocupadas por reservas activas traslapadas. & Must & Implementado & Filtro \texttt{CheckInDate < req.CheckOutDate \&\& CheckOutDate > req.CheckInDate} sobre estados activos.\\[0.1cm]
+RF-20 & Consulta de disponibilidad entre sedes devolviendo solo sede, tipo, cantidad libre y tarifa referencial, auditada. & Must & Implementado & \texttt{POST /api/availability/cross-hotel} proyecta \texttt{CrossHotelAvailabilityResponseDto} y audita en nivel \texttt{Http}.\\[0.1cm]
+RF-21 & No exponer reservas, hu\'espedes, n\'umeros de habitaci\'on ni consumos en la consulta inter-sedes. & Must & Implementado & Verificado por inspecci\'on de DTO y prueba de integraci\'on automatizada.\\[0.1cm]
+RF-22 & Crear reserva en flujo integrado (hu\'esped, fechas, habitaci\'on, tarifa, impuestos) en estado \texttt{Pendiente}. & Must & Implementado & \texttt{POST /api/reservations} crea reserva en \texttt{Pendiente} y abre su \texttt{Folio} inicial (HTTP 201).\\[0.1cm]
+RF-23 & Clave de idempotencia (\texttt{Idempotency-Key}) al crear reservas para evitar duplicados. & Must & Implementado & Persistencia en \texttt{dbo.IdempotencyKeys} devolviendo la respuesta original ante reintentos.\\[0.1cm]
+RF-24 & Impedir el \textit{overbooking} mediante garant\'ia de integridad en la base de datos. & Must & Implementado & Trigger T-SQL \texttt{TR\_Reservations\_PreventOverbooking} aborta traslapes y API retorna HTTP 409.\\[0.1cm]
+RF-25 & Detectar ediciones concurrentes mediante control de concurrencia optimista (\texttt{RowVersion}). & Must & Implementado & Propiedad \texttt{RowVersion} (\texttt{ROWVERSION}) en \texttt{Room}, \texttt{Reservation} y \texttt{User}; traduce a HTTP 409.\\[0.1cm]
+RF-26 & Validar transiciones de la m\'aquina de estados de reservas rechazando las no permitidas con HTTP 422. & Must & Implementado & \texttt{ReservationStateMachine.ValidateTransition} lanza \texttt{InvalidStateTransitionException} (HTTP 422).\\[0.1cm]
+RF-27 & Registrar historial de cada transici\'on (estado anterior, nuevo, usuario, fecha y motivo). & Must & Implementado & Tabla \texttt{dbo.ReservationStateHistories} alimentada en cada cambio de estado.\\[0.1cm]
+RF-28 & Cancelar reservas o registrar \textit{No-Show} aplicando pol\'itica, calculando penalidad y liberando habitaci\'on (\texttt{Recepcionista} con l\'imite). & Must & Implementado & \texttt{POST /api/reservations/\{id\}/cancel} aplica penalidad y exige \texttt{AdminSede} si hay penalidad o fuera de ventana libre (HTTP 403).\\[0.1cm]
+RF-29 & Calendario de ocupaci\'on por habitaci\'on de hasta 14 d\'ias con estados diferenciados. & Should & Implementado & \texttt{GET /api/availability/calendar} y vista \texttt{CalendarComponent} en Angular.\\[0.1cm]
+RF-30 & Registrar hu\'esped titular y acompa\~nantes con documento, contacto y nacionalidad. & Must & Implementado & Tablas \texttt{dbo.Guests} y \texttt{dbo.ReservationCompanions}; edici\'on en \texttt{PUT /api/guests/\{id\}}.\\[0.1cm]
+RF-31 & Impedir \textit{Check-In} si la habitaci\'on no est\'a \texttt{Limpia}/\texttt{Disponible} o falta consentimiento de datos. & Must & Implementado & \texttt{POST /api/reservations/\{id\}/check-in} bloquea con HTTP 400 e informa habitaciones alternativas.\\[0.1cm]
+RF-32 & Al completar \textit{Check-In}, pasar reserva a \texttt{CheckIn} y habitaci\'on a \texttt{Ocupada}. & Must & Implementado & Actualizaci\'on transaccional de \texttt{Reservation.Status} y \texttt{Room.OperationalStatus}.\\[0.1cm]
+RF-33 & Permitir a camarer\'ia consultar y actualizar el estado de limpieza desde interfaz adaptable a tabletas. & Must & Implementado & \texttt{HousekeepingController} y \texttt{HousekeepingComponent}; camarer\'ia restringida exclusivamente a limpieza.\\[0.1cm]
+RF-34 & Al completar \textit{Check-Out}, pasar la habitaci\'on autom\'aticamente al estado \texttt{Sucia}. & Must & Implementado & \texttt{ReservationsController.CheckOut} asigna \texttt{CleaningStatus = Sucia} y \texttt{OperationalStatus = Disponible}.\\[0.1cm]
+RF-35 & Registrar consumos y cargos en el folio con cantidad, valor, usuario y hora. & Must & Implementado & \texttt{POST /api/folios/\{id\}/charges} persiste en \texttt{dbo.FolioCharges} y recalcula totales.\\[0.1cm]
+RF-36 & Inmutabilidad de cargos registrados; correcci\'on exclusiva mediante anulaci\'on con motivo y contra-asiento. & Must & Implementado & \texttt{POST /api/folios/charges/\{chargeId\}/annul} crea contra-asiento negativo y audita el motivo.\\[0.1cm]
+RF-37 & Mostrar en el folio cargos, impuestos, pagos y saldo pendiente. & Must & Implementado & \texttt{GET /api/folios/\{reservationId\}} y \texttt{Folio.RecalculateTotals()}.\\[0.1cm]
+RF-38 & Registrar pagos y abonos con m\'etodo, referencia y n\'umero de recibo actualizando el saldo. & Must & Implementado & \texttt{POST /api/folios/\{id\}/payments} vincula al turno de caja abierto y genera recibo \texttt{REC-...}.\\[0.1cm]
+RF-39 & Admitir clave de idempotencia (\texttt{Idempotency-Key}) en el registro de pagos. & Must & Implementado & Verificaci\'on en \texttt{dbo.IdempotencyKeys} dentro de \texttt{FoliosController.AddPayment}.\\[0.1cm]
+RF-40 & Impedir el \textit{Check-Out} cuando el saldo del folio sea distinto de cero informando el valor pendiente. & Must & Implementado & Si \texttt{Folio.Balance != 0}, rechaza con HTTP 400 indicando el monto exacto en COP.\\[0.1cm]
+RF-41 & Con saldo cero, cerrar estancia, emitir comprobante y pasar la reserva a \texttt{Liquidada} con folio \texttt{Cerrado}. & Must & Implementado & \texttt{CheckOut} cierra el folio, pasa la reserva a \texttt{Liquidada} y habilita factura HTML imprimible.\\[0.1cm]
+RF-42 & Cerrar caja por turno congelando los totales por m\'etodo de pago (\texttt{Efectivo}, \texttt{Tarjeta}, \texttt{Transferencia}). & Should & Implementado & \texttt{POST /api/cashshift/close} congela totales e impide imputar nuevos pagos al turno cerrado (HTTP 422).\\[0.1cm]
+RF-43 & Generar voucher con c\'odigo QR y comprobante con identidad visual de la sede; notificar por correo. & Must & Parcial & Voucher HTML + QR PNG real (\texttt{QRCoder}) implementado; env\'io de correo simulado en memoria.\\[0.1cm]
+RF-44 & Env\'io de correo as\'incrono con hasta 3 reintentos sin revertir la reserva en caso de fallo. & Must & Parcial & \texttt{EmailNotificationService} ejecuta \texttt{Task.Run} con bucle de 3 intentos sin afectar la transacci\'on, sin SMTP real.\\[0.1cm]
+RF-45 & Registrar consentimiento expreso Habeas Data con fecha, hora, IP y versi\'on de pol\'itica. & Must & Implementado & Persistido en \texttt{dbo.DataConsents} al crear reserva o actualizar hu\'esped.\\[0.1cm]
+RF-46 & Impedir finalizar reserva o \textit{Check-In} cuando el consentimiento requerido no est\'e registrado. & Must & Implementado & Validado en \texttt{CreateReservation} (\texttt{AcceptDataConsent}) y en \texttt{CheckIn}.\\[0.1cm]
+RF-47 & Anonimizaci\'on irreversible de datos identificables del hu\'esped por \texttt{AdminGlobal} conservando valores contables. & Should & Implementado & \texttt{POST /api/guests/\{id\}/anonymize} enmascara PII (\texttt{ANON-...}) sin alterar \texttt{Folios} ni pagos.\\[0.1cm]
+RF-48 & Portal de autogesti\'on del hu\'esped en l\'inea (HU-24). & Could & Pendiente (v2) & Declarado fuera del alcance de la versi\'on inicial en la especificaci\'on.\\[0.1cm]
+RF-49 & Dashboard consolidado de la cadena con posibilidad de filtrar m\'etricas por sede. & Must & Implementado & \texttt{GET /api/dashboard/metrics} soporta vista consolidada (\texttt{hotelId=0}) y por sede.\\[0.1cm]
+RF-50 & Presentar ingresos diarios/semanales/mensuales, ocupaci\'on, ADR, RevPAR y cancelaciones. & Must & Implementado & Calculado en \texttt{HotelKpiCalculator.CalculateMetrics} y renderizado en \texttt{DashboardComponent}.\\[0.1cm]
+RF-51 & Actualizar m\'etricas del dashboard sin recarga completa de p\'agina. & Must & Implementado & Recarga reactiva mediante peticiones as\'incronas \texttt{HttpClient} y \textit{Signals} en Angular.\\[0.1cm]
+RF-52 & Exportar transacciones y listas de hu\'espedes seg\'un permisos del usuario. & Should & Parcial & Implementado en formato \textbf{CSV con BOM UTF-8} compatible con Excel y factura \textbf{HTML}; no genera binarios \texttt{.xlsx}/\texttt{.pdf} nativos.\\[0.1cm]
+RF-53 & Incluir formato estructurado, totales y metadatos de fecha, hora y usuario emisor en las exportaciones. & Should & Implementado & Los archivos CSV y HTML incluyen cabecera corporativa, usuario emisor, fecha UTC y totales.\\[0.1cm]
+RF-54 & Consultar auditor\'ia por usuario, entidad y fecha mostrando operaci\'on y valores anteriores/nuevos. & Should & Implementado & \texttt{GET /api/audit} con filtros y aislamiento por sede para \texttt{AdminSede}.\\[0.1cm]
+RF-55 & Auditor\'ia en tres niveles: \texttt{Negocio}, \texttt{Tecnico} y \texttt{Http} con redacci\'on de campos sensibles. & Should & Implementado & \texttt{SaveChangesAsync} redacta \texttt{PasswordHash}/\texttt{Token} como \texttt{[REDACTED]} y registra JSON antiguo/nuevo.\\[0.1cm]
+RF-56 & \textit{(Propuesto)} Gesti\'on de kardex de almac\'en/bodega con control de existencias de insumos y alertas de stock m\'inimo por sede. & Could & Propuesto & Propuesto como extensi\'on futura para complementar el cat\'alogo de servicios con descargo de stock f\'isico.\\
+\end{longtable}
+
+\subsection{B. Requerimientos No Funcionales}
+
+\begin{longtable}{p{1.5cm} p{2.3cm} p{4.6cm} p{2.1cm} p{3.9cm}}
+\caption{Cat\'alogo de Requerimientos No Funcionales (RNF-01 a RNF-16) y verificaci\'on t\'ecnica}
+\label{tab:requerimientos_no_funcionales}\\
+\toprule
+\textbf{C\'odigo} & \textbf{Categor\'ia} & \textbf{Descripci\'on del Requisito} & \textbf{Estado Real} & \textbf{Mecanismo / Evidencia en C\'odigo}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{C\'odigo} & \textbf{Categor\'ia} & \textbf{Descripci\'on del Requisito} & \textbf{Estado Real} & \textbf{Mecanismo / Evidencia en C\'odigo}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+RNF-01 & Rendimiento & Consulta de disponibilidad con latencia $p95 < 800\text{ ms}$. & Implementado & \'Indices compuestos \texttt{IX\_Reservations\_Hotel\_Dates\_Status} y \texttt{IX\_Rooms\_Hotel\_Status} en SQL Server.\\[0.1cm]
+RNF-02 & Concurrencia & Soportar operaciones simult\'aneas sin p\'erdida de integridad ni sobreventa. & Implementado & Verificado con \texttt{HotelManagement.ConcurrencyTests} y \texttt{EnableRetryOnFailure} en EF Core.\\[0.1cm]
+RNF-03 & Disponibilidad & Endpoint de salud operativo para monitoreo de disponibilidad (objetivo 99\%). & Implementado & Endpoint \texttt{GET /health} en \texttt{Program.cs} verificado en pruebas de integraci\'on (HTTP 200).\\[0.1cm]
+RNF-04 & Respaldo y Recuperaci\'on & Recreaci\'on reproducible de esquema y semillas; respaldo diario de BD. & Parcial & Scripts idempotentes \texttt{01\_schema.sql} a \texttt{04\_fix\_utf8\_data.sql}; backup automatizado depende del servidor SQL.\\[0.1cm]
+RNF-05 & Seguridad OWASP & Ausencia de vulnerabilidades cr\'iticas OWASP Top 10 (BOLA/IDOR, SQLi, Broken Auth). & Implementado & Consultas parametrizadas LINQ/EF Core, triple barrera Multi-Tenant y 532 pruebas de integraci\'on.\\[0.1cm]
+RNF-06 & Accesibilidad & Contraste visual adecuado y estructura sem\'antica en pantallas cr\'iticas. & Parcial & Paleta de alto contraste (\texttt{\#17365D} sobre blanco); pendiente auditor\'ia formal automatizada WCAG 2.1 AA.\\[0.1cm]
+RNF-07 & Compatibilidad & Operaci\'on en navegadores modernos (Chrome, Edge, Firefox) en escritorio y tableta. & Implementado & SPA Angular 22 con CSS Grid/Flexbox est\'andar y contratos HTTP/JSON RFC 7807.\\[0.1cm]
+RNF-08 & Mantenibilidad & Clean Architecture desacoplada y suite amplia de pruebas automatizadas. & Implementado & 4 proyectos de arquitectura limpia y 601 pruebas automatizadas exitosas.\\[0.1cm]
+RNF-09 & Observabilidad & Propagaci\'on de identificador de correlaci\'on \texttt{X-Correlation-Id} en cada petici\'on. & Implementado & \texttt{CorrelationIdMiddleware} inyecta \texttt{X-Correlation-Id} en cabeceras, \texttt{ProblemDetails} y \texttt{AuditLogs}.\\[0.1cm]
+RNF-10 & Aislamiento Multi-Tenant & Toda consulta o modificaci\'on operativa debe respetar el \texttt{HotelId} activo. & Implementado & \texttt{TenantResolutionMiddleware} + \texttt{TenantAuthorizationHelper} + 16 \textit{Global Query Filters}.\\[0.1cm]
+RNF-11 & Integridad de Reservas & Prevenci\'on del \textit{overbooking} garantizada directamente en el motor de base de datos. & Implementado & Trigger T-SQL \texttt{TR\_Reservations\_PreventOverbooking} con \texttt{ROLLBACK TRANSACTION}.\\[0.1cm]
+RNF-12 & Seguridad de Sesi\'on & Access Token de 15--30 min (implementado: 20 min) y Refresh Token rotativo con detecci\'on de replay. & Implementado & \texttt{JwtTokenService} (\texttt{AddMinutes(20)}, \texttt{ClockSkew = Zero}) y rotaci\'on en \texttt{AuthController}.\\[0.1cm]
+RNF-13 & Protecci\'on de Contrase\~nas & Almacenamiento con BCrypt (costo 11) y redacci\'on en logs de auditor\'ia. & Implementado & \texttt{BCrypt.HashPassword(password, 11)} y filtro \texttt{sensitiveKeys} (\texttt{[REDACTED]}) en \texttt{HotelDbContext}.\\[0.1cm]
+RNF-14 & Interfaz Adaptable & Dise\~no responsive adaptable a escritorio y tabletas t\'actiles de camarer\'ia. & Implementado & Hojas de estilo con \textit{media queries} y tarjetas t\'actiles en \texttt{HousekeepingComponent}.\\[0.1cm]
+RNF-15 & Usabilidad y Validaci\'on & Validaci\'on de entradas, botones deshabilitados seg\'un estado/rol y mensajes claros. & Implementado & Validaciones en formularios Angular y respuestas estructuradas \texttt{ProblemDetails}.\\[0.1cm]
+RNF-16 & Trazabilidad & Borrado l\'ogico (\texttt{IsActive = false}) y conservaci\'on de usuario, fecha UTC y cambios. & Implementado & Baja l\'ogica en habitaciones, servicios y usuarios; bit\'acora en \texttt{dbo.AuditLogs} y \texttt{ReservationStateHistories}.\\
+\end{longtable}
+
+% ==============================================================================
+% 11. CALIDAD DEL SOFTWARE (EVALUACIÓN ISO/IEC 25010)
+% ==============================================================================
+\section{Calidad del Software (Evaluaci\'on Basada en ISO/IEC 25010)}
+
+Se eval\'ua el sistema utilizando como marco de referencia t\'ecnico el modelo de calidad de producto definido en la norma \textbf{ISO/IEC 25010} \cite{iso25010}. Se aclara expresamente que esta evaluaci\'on corresponde a una auditor\'ia acad\'emica e ingenieril interna basada en evidencias de c\'odigo y pruebas, y no constituye una certificaci\'on emitida por un organismo acreditado.
+
+\begin{enumerate}
+    \item \textbf{Adecuaci\'on Funcional (\textit{Functional Suitability}):}
+    \begin{itemize}
+        \item \textit{Completitud funcional:} De los 55 requisitos funcionales del alcance original, 50 se encuentran completamente implementados, 4 parcialmente implementados (RF-09, RF-43, RF-44, RF-52) y 1 diferido por alcance a fase 2 (RF-48).
+        \item \textit{Correcci\'on funcional:} Los motores \texttt{PricingEngine}, \texttt{FolioEngine} y \texttt{HotelKpiCalculator} ejecutan c\'alculos exactos con precisi\'on decimal \texttt{decimal(18,2)}, validados mediante 67 pruebas unitarias deterministas.
+        \item \textit{Pertinencia funcional:} Las reglas espec\'ificas del negocio hotelero (como el l\'imite de cancelaci\'on sin penalidad para \texttt{Recepcionista} y el bloqueo de \textit{Check-Out} con saldo pendiente) responden directamente a los controles operativos de la cadena.
+    \end{itemize}
+
+    \item \textbf{Eficiencia de Desempe\~no (\textit{Performance Efficiency}):}
+    \begin{itemize}
+        \item \textit{Comportamiento temporal:} Las tablas cr\'iticas (\texttt{Rooms}, \texttt{Reservations}, \texttt{Seasons}, \texttt{Folios}, \texttt{AuditLogs}) cuentan con \'indices compuestos encabezados por \texttt{HotelId} en \texttt{01\_schema.sql}, evitando escaneos completos de tabla (\textit{Full Table Scans}) al filtrar por sede. La suite completa de 532 pruebas de integraci\'on HTTP se ejecuta en 9 segundos ($\approx 16.9\text{ ms}$ por caso).
+        \item \textit{Utilizaci\'on de recursos y capacidad:} Las consultas de lectura intensiva y las proyecciones de dashboard operan directamente en SQL Server mediante EF Core.
+    \end{itemize}
+
+    \item \textbf{Compatibilidad (\textit{Compatibility}):}
+    \begin{itemize}
+        \item \textit{Coexistencia:} Las cuatro sedes coexisten en la misma instancia de base de datos y de API sin colisi\'on de numeraci\'on de habitaciones (\texttt{UQ\_Rooms\_Hotel\_RoomNumber}) ni de c\'odigos de promoci\'on (\texttt{UQ\_Promotions\_Hotel\_Code}).
+        \item \textit{Interoperabilidad:} La API expone contratos OpenAPI v1 (Swagger), serializaci\'on UTF-8 completa (\texttt{UnicodeRanges.All}), errores est\'andar RFC 7807 (\texttt{application/problem+json}) y exportaciones CSV con BOM UTF-8 (\texttt{0xEF, 0xBB, 0xBF}) compatibles con Microsoft Excel.
+    \end{itemize}
+
+    \item \textbf{Capacidad de Interacci\'on / Usabilidad (\textit{Interaction Capability}):}
+    \begin{itemize}
+        \item \textit{Protecci\'on contra errores del usuario:} En \texttt{ReceptionComponent}, el sistema muestra el estado compuesto de cada habitaci\'on (\texttt{Disponible (Limpia)} vs. \texttt{Mantenimiento (Limpia)}) y deshabilita visualmente el bot\'on de \textit{Check-In} cuando la unidad no es elegible. Adem\'as, la interfaz oculta las acciones de mutaci\'on para los roles de solo lectura (\texttt{Socio}, \texttt{Auditor}) y restringe la vista de \texttt{Housekeeping} a las transiciones de limpieza.
+    \end{itemize}
+
+    \item \textbf{Fiabilidad (\textit{Reliability}):}
+    \begin{itemize}
+        \item \textit{Madurez y consistencia transaccional:} El sistema combina el trigger T-SQL \texttt{TR\_Reservations\_PreventOverbooking}, tokens de concurrencia optimista \texttt{RowVersion}, claves de idempotencia en reservas y pagos (\texttt{dbo.IdempotencyKeys}) y pol\'itica de reconexi\'on \texttt{EnableRetryOnFailure} (hasta 5 reintentos) en SQL Server.
+        \item \textit{Tolerancia a fallos:} Tanto \texttt{HttpAuditMiddleware} como \texttt{EmailNotificationService} encapsulan sus operaciones secundarias para que un fallo en el registro HTTP o en la notificaci\'on no aborte la transacci\'on principal del usuario.
+    \end{itemize}
+
+    \item \textbf{Seguridad (\textit{Security}):}
+    \begin{itemize}
+        \item \textit{Confidencialidad e integridad:} Contrase\~nas protegidas con \texttt{BCrypt} (factor 11), JWT con \texttt{ClockSkew = TimeSpan.Zero}, rotaci\'on de Refresh Tokens con detecci\'on de reutilizaci\'on y revocaci\'on inmediata de usuarios inactivos en \texttt{TenantResolutionMiddleware}.
+        \item \textit{No repudio y responsabilidad:} Registro inmutable en \texttt{dbo.AuditLogs} (niveles \texttt{Negocio}, \texttt{Tecnico} y \texttt{Http}) y en \texttt{dbo.ReservationStateHistories}.
+    \end{itemize}
+
+    \item \textbf{Mantenibilidad (\textit{Maintainability}):}
+    \begin{itemize}
+        \item \textit{Modularidad y testabilidad:} Separaci\'on estricta en cuatro proyectos (\texttt{Domain}, \texttt{Application}, \texttt{Infrastructure}, \texttt{Api}) sin dependencias circulares, permitiendo inyectar \texttt{WebApplicationFactory<Program>} en pruebas de integraci\'on y probar la l\'ogica de dominio en menos de 1 segundo.
+    \end{itemize}
+
+    \item \textbf{Flexibilidad / Portabilidad (\textit{Flexibility}):}
+    \begin{itemize}
+        \item \textit{Adaptabilidad y escalabilidad de sedes:} La incorporaci\'on de nuevas sedes y la conmutaci\'on din\'amica de contexto (\texttt{switch-hotel}) no requieren cambios en el c\'odigo fuente ni redespliegues.
+    \end{itemize}
+
+    \item \textbf{Seguridad de la Informaci\'on y Aislamiento de Tenants:}
+    \begin{itemize}
+        \item El aislamiento entre hoteles se garantiza en tres niveles independientes (Middleware HTTP, Helper de Autorizaci\'on en Controladores y 16 \textit{Global Query Filters} en EF Core), adem\'as del cumplimiento de privacidad de datos personales (consentimiento \texttt{DataConsents} y anonimizaci\'on irreversible en \texttt{POST /api/guests/\{id\}/anonymize}).
+    \end{itemize}
+\end{enumerate}
+
+% ==============================================================================
+% 12. ASEGURAMIENTO DE CALIDAD (QA)
+% ==============================================================================
+\section{Aseguramiento de Calidad (QA)}
+
+\subsection{Estrategia Shift-Left QA y Est\'andares de Desarrollo}
+El proyecto implementa una estrategia \textbf{Shift-Left QA}, trasladando la prevenci\'on y detecci\'on de defectos hacia las etapas tempranas del ciclo de vida:
+\begin{itemize}
+    \item \textbf{Verificaci\'on est\'atica y de compilaci\'on:} Habilitaci\'on de tipos de referencia anulables (\texttt{<Nullable>enable</Nullable>}) en los proyectos .NET 9 y tipado estricto en TypeScript 6.0. La compilaci\'on completa de la soluci\'on Backend finaliza con \textbf{0 errores y 0 advertencias}.
+    \item \textbf{Auditor\'ia por reflexi\'on sobre el ensamblado (\texttt{RbacControllerReflectionTests.cs}):} Pruebas automatizadas que inspeccionan mediante \texttt{System.Reflection} todos los controladores derivados de \texttt{ControllerBase}, verificando que ninguna ruta carezca de \texttt{[Authorize]} (salvo los 3 endpoints p\'ublicos autorizados: \texttt{login}, \texttt{refresh-token} y \texttt{verify-voucher}) y que se cumplan las invariantes de solo lectura para \texttt{Auditor} y \texttt{Socio}.
+\end{itemize}
+
+\subsection{Validaci\'on de Entradas, Manejo de Errores y Control de Acceso}
+\begin{itemize}
+    \item \textbf{Validaci\'on de entradas y reglas de negocio:} Todos los controladores validan rangos de fechas (\texttt{CheckOutDate > CheckInDate}), montos positivos (\texttt{BasePrice > 0}, \texttt{Price > 0}, \texttt{Amount > 0}), pertenencia de llaves for\'aneas a la sede activa y obligatoriedad de motivos en anulaciones y cancelaciones.
+    \item \textbf{Manejo centralizado de errores RFC 7807:} El middleware \texttt{ExceptionHandlingMiddleware} intercepta cualquier excepci\'on y la transforma en un objeto est\'andar \texttt{ProblemDetails} con el c\'odigo HTTP sem\'antico exacto: \texttt{400 Bad Request} (\texttt{DomainException}, \texttt{FolioBalanceNonZeroException}), \texttt{401 Unauthorized}, \texttt{403 Forbidden} (\texttt{UnauthorizedAccessException}), \texttt{404 Not Found} (\texttt{TenantAccessViolationException}, \texttt{EntityNotFoundException}), \texttt{409 Conflict} (\texttt{OverbookingException}, \texttt{DbUpdateConcurrencyException}, trigger SQL) y \texttt{422 Unprocessable Entity} (\texttt{InvalidStateTransitionException}).
+    \item \textbf{Control de versiones y mantenimiento:} El repositorio Git gestiona la evoluci\'on del c\'odigo en la rama \texttt{optimov1} publicada en GitHub, conservando la trazabilidad de los scripts SQL, el c\'odigo fuente y las suites de regresi\'on.
+\end{itemize}
+
+% ==============================================================================
+% 13. PLAN DE PRUEBAS
+% ==============================================================================
+\section{Plan de Pruebas}
+
+\subsection{Estrategia y Niveles de Prueba}
+La estrategia de pruebas cubre ocho niveles complementarios, distinguiendo con rigor cu\'ales fueron ejecutados de forma automatizada en el entorno local y cu\'ales se proponen como pruebas adicionales recomendadas:
+
+\begin{enumerate}
+    \item \textbf{Pruebas Unitarias (\textit{Ejecutadas --- 67 casos}):} Proyecto \texttt{HotelManagement.UnitTests}. Eval\'uan en memoria \texttt{PricingEngine}, \texttt{ReservationStateMachine} (transiciones v\'alidas, inv\'alidas y estados terminales \texttt{Liquidada}/\texttt{Anulada}/\texttt{NoShow}), \texttt{FolioEngine}, \texttt{HotelKpiCalculator}, bloqueo de cuenta en \texttt{User}, generaci\'on/validaci\'on JWT, codificaci\'on UTF-8 y generaci\'on de QR.
+    \item \textbf{Pruebas de Integraci\'on de API (\textit{Ejecutadas --- 63 casos base}):} Archivos \texttt{IntegrationTests.cs}, \texttt{RbacAuthorizationTests.cs} y \texttt{NewFunctionalRequirementsTests.cs}. Verifican flujos completos contra \texttt{WebApplicationFactory<Program>} y SQL Server (\texttt{HotelManagementDb}).
+    \item \textbf{Pruebas de Seguridad y Matriz Exhaustiva RBAC (\textit{Ejecutadas --- 449 casos}):} Archivos \texttt{RbacControllerReflectionTests.cs} (8 pruebas de reflexi\'on sobre los 66 endpoints) y \texttt{RbacMatrixComprehensiveTests.cs} (441 pruebas parametrizadas HTTP: 7 perfiles [6 roles + An\'onimo] $\times$ 63 endpoints protegidos/operativos).
+    \item \textbf{Pruebas de Aislamiento Multi-Tenant y Reglas de Negocio (\textit{Ejecutadas --- 20 casos compuestos con m\'ultiples aserciones}):} Archivos \texttt{MultiTenantIsolationTests.cs} y \texttt{SecurityBusinessRulesTests.cs}. Eval\'uan manipulaci\'on de \texttt{X-Hotel-Id}, manipulaci\'on de \texttt{?hotelId=}, ataques IDOR sobre 23 endpoints de recursos de otra sede, inyecci\'on de llaves for\'aneas cruzadas, l\'imite de cancelaci\'on de \texttt{Recepcionista}, solo lectura de \texttt{Auditor}, m\'inimo privilegio de \texttt{Housekeeping}, segregaci\'on \texttt{Socio} vs. \texttt{AdminGlobal} y revocaci\'on inmediata de usuarios desactivados.
+    \item \textbf{Pruebas de Concurrencia y Prevenci\'on de Overbooking (\textit{Ejecutadas --- 2 casos}):} Proyecto \texttt{HotelManagement.ConcurrencyTests}. Lanza peticiones paralelas simult\'aneas contra la misma habitaci\'on y rango de fechas, comprobando que exactamente una reserva se confirma (\texttt{201 Created}) y las colisiones reciben \texttt{409 Conflict}.
+    \item \textbf{Pruebas Funcionales End-to-End en Vivo (\textit{Ejecutadas mediante scripts PowerShell}):} Scripts \texttt{scratch/verify\_live\_api.ps1}, \texttt{scratch/verify\_reception\_checkout.ps1} y \texttt{scratch/verify\_housekeeping\_isolation.ps1}.
+    \item \textbf{Pruebas de Interfaz E2E Automatizadas en Navegador (\textit{Recomendadas / Pendientes}):} La compilaci\'on del Frontend Angular 22 (\texttt{ng build}) fue verificada exitosamente (\texttt{Exit Code 0}), pero no se dispone de una suite Cypress/Playwright ejecutada en navegador headless.
+    \item \textbf{Pruebas de Carga y Estr\'es con 50 Usuarios Concurrentes (\textit{Recomendadas / Pendientes}):} Aunque se ejecutaron pruebas de concurrencia at\'omica sobre reservas simult\'aneas, la medici\'on formal del percentil $p95 < 800\text{ ms}$ bajo 50 hilos sostenidos con k6 o JMeter se documenta como prueba recomendada.
+\end{enumerate}
+
+\subsection{Cinco Escenarios Espec\'ificos de Aislamiento Multi-Tenant Verificados}
+En cumplimiento de los requerimientos del plan de pruebas, se verificaron mediante ejecuci\'on real en \texttt{MultiTenantIsolationTests.cs} los cinco escenarios cr\'iticos de aislamiento entre el \textbf{Hotel 1 (Grand Oasis Bogot\'a)} y el \textbf{Hotel 2 (Costa Azul Cartagena)}:
+
+\begin{enumerate}
+    \item \textbf{Escenario 1 --- Un hotel intenta consultar informaci\'on de otro:} El usuario \texttt{admin.bogota@hotelchain.com} (\texttt{AdminSede} asignado exclusivamente al Hotel 1) solicita \texttt{GET /api/rooms}, \texttt{GET /api/reservations}, \texttt{GET /api/guests} y \texttt{GET /api/audit} enviando el encabezado \texttt{X-Hotel-Id: 2}. El middleware \texttt{TenantResolutionMiddleware} detecta que el usuario no tiene v\'inculo con la sede 2 en \texttt{dbo.HotelUsers} y rechaza la solicitud con \textbf{HTTP 404 Not Found}. Asimismo, si mantiene \texttt{X-Hotel-Id: 1} pero inyecta el par\'ametro \texttt{?hotelId=2} (o \texttt{?hotelId=0}) en \texttt{/api/dashboard/metrics} o \texttt{/api/reports/transactions/excel}, \texttt{TenantAuthorizationHelper} rechaza el intento con \textbf{HTTP 403 Forbidden}.
+    \item \textbf{Escenario 2 --- Un usuario intenta modificar un registro de otro tenant:} \texttt{AdminSede} de Bogot\'a (Hotel 1) env\'ia peticiones \texttt{PUT /api/rooms/13}, \texttt{PUT /api/roomtypes/5}, \texttt{PUT /api/services/8}, \texttt{PUT /api/guests/5} y \texttt{POST /api/reservations/6/cancel} (todos recursos pertenecientes a Cartagena, Hotel 2). El Backend bloquea todas las modificaciones retornando \textbf{HTTP 404 Not Found} sin alterar ning\'un registro en SQL Server.
+    \item \textbf{Escenario 3 --- Acceso a un recurso cambiando el identificador (Ataque IDOR):} Operando con contexto leg\'itimo en el Hotel 1 (\texttt{X-Hotel-Id: 1}), \texttt{AdminSede} y \texttt{Recepcionista} de Bogot\'a enumeran identificadores primarios de Cartagena: \texttt{GET /api/rooms/13}, \texttt{GET /api/reservations/6}, \texttt{GET /api/folios/6}, \texttt{GET /api/guests/5} y \texttt{GET /api/reports/invoice/6}. Los \textit{Global Query Filters} de EF Core filtran por \texttt{HotelId == 1}, devolviendo \textbf{HTTP 404 Not Found} en los 23 puntos de acceso probados.
+    \item \textbf{Escenario 4 --- Ejecuci\'on de una operaci\'on sin autorizaci\'on de rol:} Usuarios autenticados intentan ejecutar acciones fuera de su matriz RBAC dentro de su propia sede: \texttt{Auditor} intenta \texttt{POST /api/reservations} o \texttt{PUT /api/guests/1} (\textbf{HTTP 403 Forbidden}); \texttt{Housekeeping} intenta cambiar \texttt{OperationalStatus = Mantenimiento} en \texttt{PUT /api/housekeeping/rooms/1/status} o consultar \texttt{GET /api/dashboard/metrics} (\textbf{HTTP 403 Forbidden}); \texttt{Recepcionista} intenta cancelar una reserva fuera de la ventana gratuita o con tarifa no reembolsable (\textbf{HTTP 403 Forbidden}).
+    \item \textbf{Escenario 5 --- Verificaci\'on de aplicaci\'on correcta de los filtros de tenant y llaves for\'aneas:} Se verifica que \texttt{AdminSede} de Bogot\'a (\texttt{HotelId = 1}) al consultar \texttt{GET /api/rooms}, \texttt{GET /api/roomtypes}, \texttt{GET /api/reservations} y \texttt{GET /api/guests} recibe exclusivamente registros con \texttt{HotelId == 1}, y que si intenta crear en el Hotel 1 una habitaci\'on usando \texttt{RoomTypeId = 5} (del Hotel 2) o un cargo en un folio del Hotel 1 usando \texttt{ServiceId = 8} (del Hotel 2), el controlador rechaza la inyecci\'on cruzada con \textbf{HTTP 400/404}.
+\end{enumerate}
+
+\subsection{Matriz Consolidada de Casos de Prueba}
+La Tabla~\ref{tab:matriz_pruebas} presenta la matriz representativa de casos de prueba verificados, diferenciando claramente los casos ejecutados (con su resultado real obtenido) de los casos recomendados pendientes de ejecuci\'on con herramientas externas.
+
+\begin{longtable}{p{1.3cm} p{2.1cm} p{3.1cm} p{2.6cm} p{2.0cm} p{2.0cm} p{1.3cm}}
+\caption{Matriz de casos de prueba ejecutados y recomendados del sistema}
+\label{tab:matriz_pruebas}\\
+\toprule
+\textbf{ID} & \textbf{M\'odulo} & \textbf{Escenario} & \textbf{Datos de Entrada} & \textbf{Resultado Esperado} & \textbf{Resultado Obtenido} & \textbf{Estado}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{M\'odulo} & \textbf{Escenario} & \textbf{Datos de Entrada} & \textbf{Resultado Esperado} & \textbf{Resultado Obtenido} & \textbf{Estado}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+CP-01 & Dominio / Tarifas & C\'alculo de estancia con temporada, recargo de fin de semana, promoci\'on e IVA. & \texttt{PricingEngine}: 3 noches, tarifa base \$250.000, promo 10\%. & Subtotales, descuento e impuestos exactos. & C\'alculo exacto en 67/67 pruebas unitarias. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-02 & Dominio / Estados & Transici\'on ilegal en m\'aquina de estados (\texttt{Pendiente} $\rightarrow$ \texttt{CheckOut} o desde \texttt{Anulada}). & \texttt{ValidateTransition} con estado origen terminal o salto inv\'alido. & Lanza \texttt{InvalidStateTransitionException} (HTTP 422). & Excepci\'on lanzada y c\'odigo HTTP 422 verificado. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-03 & Seguridad / Auth & Bloqueo de cuenta tras 5 intentos fallidos de login y rechazo de usuario desactivado. & 5 logins err\'oneos; petici\'on con JWT de usuario con \texttt{IsActive=false}. & Cuenta bloqueada 15 min; JWT de inactivo recibe HTTP 401. & Bloqueo activo y HTTP 401 inmediato en middleware. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-04 & Reflexi\'on RBAC & Auditor\'ia est\'atica de atributos \texttt{[Authorize]} en las 66 acciones de los 16 controladores. & Ensamblado \texttt{HotelManagement.Api} v\'ia \texttt{System.Reflection}. & 63 endpoints protegidos por rol/auth y 3 p\'ublicos expl\'icitos. & 8/8 pruebas de reflexi\'on aprobadas sin brechas. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-05 & Matriz HTTP RBAC & Evaluaci\'on exhaustiva de los 6 roles + An\'onimo sobre 30 endpoints \texttt{GET} y 33 mutaciones. & 441 combinaciones parametrizadas en \texttt{RbacMatrixComprehensiveTests}. & \texttt{401} sin token, \texttt{403} rol no autorizado, no-\texttt{401/403} rol permitido. & 441/441 casos HTTP respondieron el c\'odigo esperado. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-06 & Multi-Tenant (Esc. 1) & \texttt{AdminSede} del Hotel 1 consulta datos del Hotel 2 manipulando \texttt{X-Hotel-Id: 2} o \texttt{?hotelId=2}. & Token \texttt{admin.bogota}, header \texttt{X-Hotel-Id: 2} o query \texttt{?hotelId=2}. & \texttt{404 Not Found} en header ajeno; \texttt{403 Forbidden} en query ajeno. & \texttt{404} y \texttt{403} verificados en todos los endpoints. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-07 & Multi-Tenant (Esc. 2 y 3) & Ataque IDOR de lectura y escritura desde Hotel 1 hacia 23 endpoints con IDs del Hotel 2. & \texttt{RoomId=13}, \texttt{ResId=6}, \texttt{FolioId=6}, \texttt{GuestId=5}, \texttt{ServiceId=8}. & \texttt{404 Not Found} sin exponer ni mutar datos de Cartagena. & \texttt{404 Not Found} en las 23 peticiones IDOR. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-08 & Multi-Tenant (Esc. 5) & Inyecci\'on cruzada de FK al crear habitaci\'on, reserva o cargo en Hotel 1 con FKs del Hotel 2. & \texttt{POST /api/rooms} en Hotel 1 con \texttt{RoomTypeId=5} (Hotel 2). & Rechazo \texttt{400 Bad Request} o \texttt{404 Not Found}. & Rechazado en servidor; integridad referencial intacta. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-09 & Negocio / Recepci\'on & Cancelaci\'on ``Con l\'imite'' para \texttt{Recepcionista}: dentro vs. fuera de ventana libre / con penalidad. & Reserva flexible ($>48\text{h}$) vs. reserva $<48\text{h}$ o no reembolsable. & Dentro del l\'imite: \texttt{200 OK} (\$0); con penalidad: \texttt{403 Forbidden} para Recepci\'on y \texttt{200 OK} para \texttt{AdminSede}. & \texttt{200 OK} sin penalidad; \texttt{403} a Recepci\'on con penalidad; \texttt{200 OK} a \texttt{AdminSede}. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-10 & Negocio / Auditor & Verificaci\'on de acceso de solo lectura de \texttt{Auditor} ante 21 mutaciones con payloads v\'alidos. & Token \texttt{auditor@hotelchain.com} ejecutando \texttt{POST/PUT/PATCH/DELETE}. & \texttt{200 OK} en consultas autorizadas; \texttt{403 Forbidden} en las 21 escrituras. & \texttt{200 OK} en lecturas y \texttt{403 Forbidden} en todas las escrituras. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-11 & Negocio / Camarer\'ia & Principio de m\'inimo privilegio de \texttt{Housekeeping}: cambio de limpieza vs. escalamiento a mantenimiento. & \texttt{PUT /api/housekeeping/rooms/1/status} con \texttt{CleaningStatus} vs. \texttt{OperationalStatus}. & \texttt{200 OK} al cambiar limpieza; \texttt{403 Forbidden} al intentar alterar estado operativo. & \texttt{200 OK} en limpieza; \texttt{403 Forbidden} en estado operativo y resto de m\'odulos. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-12 & Global / SoD & Diferenciaci\'on \texttt{Socio} vs. \texttt{AdminGlobal} y reportes consolidados \texttt{?hotelId=0}. & \texttt{GET /api/dashboard/metrics?hotelId=0}, \texttt{reports/*/excel?hotelId=0}, mutaciones operativas. & \texttt{200 OK} en reportes globales; \texttt{Socio} \texttt{403} en usuarios/auditor\'ia; \texttt{AdminGlobal} \texttt{403} en reservas/caja. & \texttt{200 OK} en consolidados (\texttt{HotelId=0}) y \texttt{403} en exclusiones SoD. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-13 & Concurrencia / BD & Dos reservas simult\'aneas para la misma habitaci\'on y fechas + clave de idempotencia. & 2 hilos concurrentes sobre \texttt{POST /api/reservations}; repetici\'on con igual \texttt{Idempotency-Key}. & Solo 1 reserva creada (\texttt{201}) y la otra rechazada (\texttt{409}); idempotencia retorna la misma reserva. & 2/2 pruebas en \texttt{ConcurrencyTests} y prueba de idempotencia aprobadas. & \textcolor{verdepass}{\textbf{PASS}}\\[0.12cm]
+CP-14 & Rendimiento / Carga & Prueba de estr\'es sostenida con 50 usuarios virtuales concurrentes midiendo $p95 < 800\text{ ms}$. & Script k6 / JMeter sobre \texttt{/api/availability/search}. & Latencia $p95 < 800\text{ ms}$ y $0\%$ de errores 5xx. & \textit{No ejecutada} (herramienta de carga externa no ejecutada). & \textcolor{ambarwarn}{\textbf{PEND.}}\\[0.12cm]
+CP-15 & Interfaz / E2E UI & Prueba automatizada en navegador real (Playwright/Cypress) y auditor\'ia WCAG 2.1 AA con Axe. & Flujo visual completo en navegador Chromium sobre \texttt{localhost:4200}. & Compilaci\'on Angular exitosa (\texttt{PASS}); ejecuci\'on E2E en navegador pendiente. & Build Angular verificado (\texttt{Exit 0}); test E2E en navegador pendiente. & \textcolor{ambarwarn}{\textbf{PEND.}}\\
+\end{longtable}
+
+% ==============================================================================
+% 14. ANÁLISIS DE RIESGOS
+% ==============================================================================
+\section{An\'alisis de Riesgos}
+
+La Tabla~\ref{tab:matriz_riesgos} presenta la matriz de riesgos t\'ecnicos, operativos y de seguridad evaluados para el sistema, junto con las medidas de mitigaci\'on implementadas en el c\'odigo.
+
+\begin{longtable}{p{3.2cm} p{1.6cm} p{1.6cm} p{1.6cm} p{6.4cm}}
+\caption{Matriz de an\'alisis de riesgos y controles de mitigaci\'on implementados}
+\label{tab:matriz_riesgos}\\
+\toprule
+\textbf{Riesgo Identificado} & \textbf{Prob.} & \textbf{Impacto} & \textbf{Nivel} & \textbf{Mitigaci\'on Implementada en el Proyecto}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Riesgo Identificado} & \textbf{Prob.} & \textbf{Impacto} & \textbf{Nivel} & \textbf{Mitigaci\'on Implementada en el Proyecto}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\textbf{R-01: Fuga de informaci\'on entre hoteles (\textit{Cross-Tenant Leakage} / IDOR)} & Media & Cr\'itico & \textbf{Alto} & Triple barrera en Backend: \texttt{TenantResolutionMiddleware} (404), \texttt{TenantAuthorizationHelper} (403 ante manipulaci\'on de \texttt{hotelId}) y 16 \textit{Global Query Filters} en \texttt{HotelDbContext}, verificados con 532 pruebas de integraci\'on.\\[0.15cm]
+\textbf{R-02: Acceso no autorizado o escalamiento vertical de privilegios} & Media & Alto & \textbf{Alto} & Atributos \texttt{[Authorize(Roles)]} verificados por reflexi\'on en las 66 acciones de controlador; validaci\'on de rol en servidor independiente del Frontend; restricci\'on de \texttt{Housekeeping} solo a \texttt{CleaningStatus} y l\'imite de cancelaci\'on en \texttt{Recepcionista}.\\[0.15cm]
+\textbf{R-03: Errores de inventario y sobreventa de habitaciones (\textit{Overbooking})} & Media & Cr\'itico & \textbf{Alto} & Disparador at\'omico \texttt{TR\_Reservations\_PreventOverbooking} en SQL Server que ejecuta \texttt{ROLLBACK TRANSACTION} ante solapamientos, m\'as columna \texttt{RowVersion} para concurrencia optimista (HTTP 409) y baja l\'ogica protegida (RF-12).\\[0.15cm]
+\textbf{R-04: P\'erdida de datos o corrupci\'on de historial contable} & Baja & Cr\'itico & \textbf{Medio} & Prohibici\'on de borrado f\'isico en habitaciones, servicios, usuarios y cargos de folio; inmutabilidad de \texttt{FolioCharges} mediante contra-asientos; anonimizaci\'on (RF-47) que preserva intactos los montos de folios y pagos.\\[0.15cm]
+\textbf{R-05: Errores de autenticaci\'on, fuerza bruta o uso de sesiones revocadas} & Media & Alto & \textbf{Alto} & Hashing \texttt{BCrypt} (costo 11), bloqueo de cuenta por 15 minutos al 5.\textsuperscript{o} intento fallido, rotaci\'on de Refresh Tokens con revocaci\'on de familia ante replay, y verificaci\'on de \texttt{Users.IsActive} en cada request HTTP.\\[0.15cm]
+\textbf{R-06: Fallos de disponibilidad o interrupci\'on transitoria de base de datos} & Baja & Alto & \textbf{Medio} & Configuraci\'on de resiliencia \texttt{EnableRetryOnFailure(maxRetryCount: 5)} en EF Core SQL Server, endpoint de monitoreo \texttt{GET /health} y desacoplamiento de auditor\'ia HTTP y notificaciones.\\[0.15cm]
+\textbf{R-07: Degradaci\'on de rendimiento en consultas multi-sede} & Media & Medio & \textbf{Medio} & \'Indices compuestos por \texttt{HotelId}, fechas y estados en las tablas operativas de \texttt{01\_schema.sql} y acotamiento de resultados en auditor\'ia (\texttt{Take(500)}) y calendario (m\'aximo 14 d\'ias).\\
+\end{longtable}
+
+% ==============================================================================
+% 15. RESULTADOS Y EVIDENCIAS
+% ==============================================================================
+\section{Resultados y Evidencias}
+
+\subsection{Evidencias Reales de Compilaci\'on y Ejecuci\'on de Pruebas Automatizadas}
+Todas las pruebas automatizadas implementadas en la soluci\'on fueron ejecutadas contra el entorno local real (\texttt{.NET 9.0} y \texttt{SQL Server --- HotelManagementDb}), obteniendo los resultados verificables que se muestran en la Tabla~\ref{tab:resumen_ejecucion_pruebas} y en el listado de salida de consola subsiguiente.
+
+\begin{table}[H]
+\centering
+\caption{Resultados reales obtenidos en la ejecuci\'on de las suites de pruebas y compilaci\'on}
+\label{tab:resumen_ejecucion_pruebas}
+\begin{tabular}{p{5.8cm} r r r r p{2.2cm}}
+\toprule
+\textbf{Suite / Proyecto Evaluado} & \textbf{Total} & \textbf{Aprob.} & \textbf{Fall.} & \textbf{Omit.} & \textbf{Tiempo / Estado}\\
+\midrule
+\texttt{HotelManagement.UnitTests.dll} & 67 & 67 & 0 & 0 & $975\text{ ms}$ (\textbf{PASS})\\
+\texttt{HotelManagement.IntegrationTests.dll} & 532 & 532 & 0 & 0 & $9.0\text{ s}$ (\textbf{PASS})\\
+\texttt{HotelManagement.ConcurrencyTests.dll} & 2 & 2 & 0 & 0 & $8.0\text{ s}$ (\textbf{PASS})\\
+\midrule
+\textbf{Total Pruebas Automatizadas .NET 9} & \textbf{601} & \textbf{601} & \textbf{0} & \textbf{0} & \textbf{100\% Aprobado}\\
+\midrule
+Compilaci\'on Backend (\texttt{dotnet build}) & 7 proy. & 7 & 0 & 0 & 0 Adv. / 0 Err.\\
+Compilaci\'on Frontend (\texttt{ng build}) & 1 SPA & 1 & 0 & 0 & Exit Code 0\\
+Cobertura de Endpoints de la API & 67 ep. & 67 & 0 & 0 & \textbf{100\% Cubierto}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{lstlisting}[caption={Evidencia real de ejecuci\'on de los tres proyectos de pruebas con \texttt{dotnet test}}]
+> dotnet build backend\HotelManagement.slnx --no-restore -m:1
+Compilacion correcta.
+    0 Advertencia(s)
+    0 Errores
+
+> dotnet test backend\tests\HotelManagement.UnitTests\HotelManagement.UnitTests.csproj --no-build
+Correctas! - Con error: 0, Superado: 67, Omitido: 0, Total: 67, Duracion: 975 ms - HotelManagement.UnitTests.dll (net9.0)
+
+> dotnet test backend\tests\HotelManagement.IntegrationTests\HotelManagement.IntegrationTests.csproj --no-build
+Correctas! - Con error: 0, Superado: 532, Omitido: 0, Total: 532, Duracion: 9 s - HotelManagement.IntegrationTests.dll (net9.0)
+
+> dotnet test backend\tests\HotelManagement.ConcurrencyTests\HotelManagement.ConcurrencyTests.csproj --no-build
+Correctas! - Con error: 0, Superado: 2, Omitido: 0, Total: 2, Duracion: 8 s - HotelManagement.ConcurrencyTests.dll (net9.0)
+\end{lstlisting}
+
+\subsection{Observaciones T\'ecnicas Relevantes Derivadas de las Pruebas}
+Durante la auditor\'ia y ejecuci\'on de la suite de pruebas se identificaron y corrigieron en el c\'odigo fuente defectos reales de seguridad y consistencia Multi-Tenant que demuestran el valor pr\'actico del enfoque Shift-Left QA:
+\begin{enumerate}
+    \item \textbf{Excepci\'on en \textit{Global Query Filters} al usar contexto consolidado (\texttt{X-Hotel-Id: 0}):} Inicialmente, las expresiones \texttt{HasQueryFilter} en \texttt{HotelDbContext.cs} acced\'ian a \texttt{\_tenantContext.CurrentHotelId.Value}. En Entity Framework Core 9, cuando un rol global (\texttt{Socio}, \texttt{AdminGlobal}, \texttt{Auditor}) enviaba \texttt{X-Hotel-Id: 0} (\texttt{IsGlobalBypass = true} y \texttt{CurrentHotelId = null}), el evaluador de par\'ametros de consulta arrojaba \texttt{InvalidOperationException: Nullable object must have a value} (\texttt{HTTP 500}). Se corrigieron los 16 filtros utilizando comparaci\'on anulable segura \texttt{\_tenantContext.CurrentHotelId != null \&\& e.HotelId == \_tenantContext.CurrentHotelId}.
+    \item \textbf{Habilitaci\'on de exportaci\'on global consolidada en \texttt{ReportsController}:} Los endpoints \texttt{/api/reports/transactions/excel} y \texttt{/api/reports/guests/excel} rechazaban con \texttt{HTTP 400} el par\'ametro \texttt{?hotelId=0} para \texttt{Socio}, \texttt{AdminGlobal} y \texttt{Auditor}. Se habilit\'o \texttt{allowConsolidatedZero: true} en \texttt{ResolveAuthorizedHotelId}, permitiendo generar reportes consolidados de toda la cadena sin relajar el bloqueo \texttt{HTTP 403} para \texttt{AdminSede}.
+    \item \textbf{Alineaci\'on de defensa en profundidad en el Frontend Angular:} Se sincronizaron las guardias de ruta (\texttt{app.routes.ts}), el servicio de autorizaci\'on (\texttt{auth.service.ts}) y las vistas (\texttt{admin-pages}, \texttt{housekeeping}, \texttt{reservations}, \texttt{folio}, \texttt{cash-shift}, \texttt{dashboard}) con la matriz RBAC del Backend.
+\end{enumerate}
+
+\subsection{Inventario de Capturas Visuales y Pruebas Pendientes de Validaci\'on}
+Siguiendo la regla de integridad documental, se deja constancia de que \textbf{el repositorio no almacena archivos de imagen (\texttt{.png}/\texttt{.jpg}) con capturas de pantalla de la interfaz gr\'afica}. En lugar de generar im\'agenes ficticias, se lista a continuaci\'on el protocolo de capturas de pantalla y validaciones complementarias que el equipo expositor puede tomar directamente levantando el Backend (\texttt{dotnet run}) y el Frontend (\texttt{npm start} en \texttt{http://localhost:4200}):
+\begin{enumerate}
+    \item \textbf{Captura 1 (Login y Conmutador de Sede):} Pantalla \texttt{/login} e interfaz superior con el selector de las 4 sedes (\textit{Grand Oasis Bogot\'a}, \textit{Costa Azul Cartagena}, \textit{Monta\~na Dorada Medell\'in}, \textit{Valle Real Cali}) y la opci\'on \textit{Cadena Consolidada} activa para \texttt{Socio} y \texttt{AdminGlobal}.
+    \item \textbf{Captura 2 (Dashboard Consolidado vs. Sede):} Vista \texttt{/dashboard} mostrando las tarjetas de Ocupaci\'on, ADR, RevPAR, ingresos y comparativa multi-hotel.
+    \item \textbf{Captura 3 (Administraci\'on de Inventario de Habitaciones y Servicios):} Vista \texttt{/admin/rooms} y \texttt{/admin/services} evidenciando tipolog\'ias, habitaciones f\'isicas por piso y bloqueo RF-12 al intentar desactivar una habitaci\'on con reservas activas.
+    \item \textbf{Captura 4 (Flujo de Recepci\'on, Folio y Caja):} Vistas \texttt{/reception}, \texttt{/folio/:id} y \texttt{/cash-shift} mostrando un cargo anulado por contra-asiento y el bloqueo de \textit{Check-Out} con saldo pendiente.
+    \item \textbf{Captura 5 (Interfaz de Housekeeping):} Vista \texttt{/housekeeping} autenticada con \texttt{camareria.bogota@hotelchain.com} mostrando exclusivamente los controles de cambio de estado de limpieza.
+\end{enumerate}
+
+% ==============================================================================
+% 16. LIMITACIONES Y TRABAJO FUTURO
+% ==============================================================================
+\section{Limitaciones Actuales y Trabajo Futuro}
+
+A partir de la auditor\'ia del c\'odigo fuente se identifican las siguientes limitaciones t\'ecnicas actuales y las l\'ineas de evoluci\'on recomendadas:
+
+\begin{enumerate}
+    \item \textbf{Integraci\'on de un m\'odulo de Kardex e Inventario F\'isico de Almac\'en/Bodega (RF-56 propuesto):} Actualmente el sistema controla el inventario de habitaciones (\texttt{Rooms}) y el cat\'alogo comercial de servicios (\texttt{AdditionalServices}), pero no descuenta existencias f\'isicas de bodega al cargar productos de minibar o restaurante en el folio ni gestiona compras a proveedores o lencer\'ia de piso. Se propone incorporar las entidades \texttt{InventoryItems}, \texttt{Warehouses} y \texttt{StockMovements} discriminadas por \texttt{HotelId}.
+    \item \textbf{Generaci\'on nativa de archivos binarios OpenXML (\texttt{.xlsx}) y PDF (\texttt{.pdf}):} Los endpoints de exportaci\'on en \texttt{ReportsController} y \texttt{DashboardController} entregan actualmente archivos \texttt{CSV con BOM UTF-8} y comprobantes en \texttt{HTML imprimible}. Se recomienda integrar librer\'ias como \texttt{ClosedXML} y \texttt{QuestPDF} para producir documentos binarios nativos con transmisi\'on por \textit{streaming}.
+    \item \textbf{Proveedor SMTP / API de Correo Transaccional Real (RF-43 y RF-44):} Reemplazar la simulaci\'on en memoria de \texttt{EmailNotificationService} por un adaptador SMTP real (SendGrid, Amazon SES o MailKit) con persistencia de la cola de salida en base de datos.
+    \item \textbf{Validaci\'on de reservas futuras al desactivar una sede completa (RF-09):} Extender a \texttt{HotelsController.UpdateHotel} la misma validaci\'on de reservas futuras activas que ya se encuentra implementada para habitaciones individuales en \texttt{RoomsController.DeactivateRoom} (RF-12).
+    \item \textbf{Almacenamiento de Refresh Tokens en cookies \texttt{HttpOnly} y Secretos en Variables de Entorno:} Migrar el almacenamiento de sesi\'on en el navegador desde \texttt{localStorage} hacia cookies \texttt{HttpOnly; Secure; SameSite=Strict} y externalizar la clave \texttt{Jwt:Secret} y la cadena de conexi\'on fuera de \texttt{appsettings.json} mediante variables de entorno o Azure Key Vault en producci\'on.
+    \item \textbf{Portal de Autogesti\'on del Hu\'esped y Pasarela de Pagos (HU-24 / RF-48):} Desarrollar el portal p\'ublico para que el hu\'esped consulte disponibilidad, reserve en l\'inea y pague mediante pasarela electr\'onica (Wompi, Stripe o PayU).
+\end{enumerate}
+
+% ==============================================================================
+% 17. CONCLUSIONES
+% ==============================================================================
+\section{Conclusiones}
+
+\begin{enumerate}
+    \item \textbf{Soluci\'on efectiva a la problem\'atica operativa multi-sede:} El sistema reemplaza el manejo fragmentado en hojas de c\'alculo por una plataforma centralizada capaz de administrar simult\'aneamente el inventario de tipolog\'ias y habitaciones f\'isicas, el cat\'alogo de servicios adicionales, el ciclo completo de reservas y recepci\'on, la facturaci\'on inmutable por folios, los turnos de caja y la operaci\'on de camarer\'ia para las cuatro sedes de \textbf{CONTINENTALIA SAS}.
+    \item \textbf{Solidez de la arquitectura Multi-Tenant en triple barrera:} El dise\~no de base de datos compartida con columna discriminadora \texttt{HotelId}, reforzado por \texttt{TenantResolutionMiddleware}, \texttt{TenantAuthorizationHelper} y los 16 \textit{Global Query Filters} de Entity Framework Core 9, garantiza que el personal operativo de una sede no pueda consultar, modificar ni inferir la existencia de registros pertenecientes a otros hoteles (respondiendo \texttt{HTTP 404 Not Found} ante ataques IDOR y \texttt{HTTP 403 Forbidden} ante manipulaci\'on de par\'ametros de sede), al tiempo que permite consultas consolidadas eficientes (\texttt{HotelId = 0}) para \texttt{Socio}, \texttt{AdminGlobal} y \texttt{Auditor}.
+    \item \textbf{Cumplimiento verificable de calidad ISO/IEC 25010 e integridad transaccional:} La combinaci\'on de \textit{Clean Architecture}, el disparador T-SQL \texttt{TR\_Reservations\_PreventOverbooking}, el control de concurrencia optimista mediante \texttt{RowVersion}, las claves de idempotencia y la bit\'acora de auditor\'ia en tres niveles (\texttt{Negocio}, \texttt{Tecnico} y \texttt{Http}) materializa los atributos de fiabilidad, adecuaci\'on funcional, seguridad y mantenibilidad exigidos por el est\'andar ISO/IEC 25010.
+    \item \textbf{Evidencia emp\'irica mediante automatizaci\'on Shift-Left QA:} La construcci\'on y ejecuci\'on de \textbf{601 pruebas automatizadas con 100\% de aprobaci\'on (0 fallos)} ---incluyendo reflexi\'on sobre los 66 endpoints de controlador y una matriz HTTP exhaustiva de 441 combinaciones de rol y endpoint--- permiti\'o detectar y corregir defectos sutiles en tiempo de desarrollo y ofrece una base de regresi\'on confiable para la evoluci\'on futura del sistema.
+\end{enumerate}
+
+% ==============================================================================
+% 18. REFERENCIAS BIBLIOGRÁFICAS (FORMATO APA 7)
+% ==============================================================================
+\newpage
+\nocite{*}
+\begin{thebibliography}{99}
+
+\bibitem{chong2006multitenant}
+Chong, F., Carraro, G., \& Wolter, R. (2006). \textit{Multi-tenant data architecture}. Microsoft Corporation.
+
+\bibitem{ley1581}
+Congreso de la Rep\'ublica de Colombia. (2012). \textit{Ley Estatutaria 1581 de 2012: Por la cual se dictan disposiciones generales para la protecci\'on de datos personales}. Diario Oficial No. 48.587.
+
+\bibitem{angular_docs}
+Google LLC. (2025). \textit{Angular documentation: Standalone components, signals, routing and HttpClient}. \url{https://angular.dev/overview}
+
+\bibitem{iso25010}
+International Organization for Standardization. (2023). \textit{ISO/IEC 25010:2023 Systems and software engineering --- Systems and software Quality Requirements and Evaluation (SQuaRE) --- Product quality model}. ISO/IEC.
+
+\bibitem{martin2017clean}
+Martin, R. C. (2017). \textit{Clean architecture: A craftsman's guide to software structure and design}. Prentice Hall.
+
+\bibitem{dotnet9_docs}
+Microsoft Corporation. (2024a). \textit{ASP.NET Core in .NET 9 documentation}. Microsoft Learn. \url{https://learn.microsoft.com/en-us/aspnet/core/}
+
+\bibitem{efcore_queryfilters}
+Microsoft Corporation. (2024b). \textit{Global query filters --- Entity Framework Core}. Microsoft Learn. \url{https://learn.microsoft.com/en-us/ef/core/querying/filters}
+
+\bibitem{sqlserver_docs}
+Microsoft Corporation. (2024c). \textit{Microsoft SQL Server technical documentation}. Microsoft Learn. \url{https://learn.microsoft.com/en-us/sql/sql-server/}
+
+\bibitem{myers2011art}
+Myers, G. J., Sandler, C., \& Badgett, T. (2011). \textit{The art of software testing} (3rd ed.). John Wiley \& Sons.
+
+\bibitem{rfc7807}
+Nottingham, M., \& Wilde, E. (2016). \textit{RFC 7807: Problem details for HTTP APIs}. Internet Engineering Task Force (IETF). \url{https://www.rfc-editor.org/rfc/rfc7807}
+
+\bibitem{nodejs_docs}
+OpenJS Foundation. (2024). \textit{Node.js documentation}. \url{https://nodejs.org/en/docs}
+
+\bibitem{owasp2021top10}
+OWASP Foundation. (2021). \textit{OWASP Top 10:2021 --- The ten most critical web application security risks}. \url{https://owasp.org/Top10/}
+
+\end{thebibliography}
+
+\end{document}

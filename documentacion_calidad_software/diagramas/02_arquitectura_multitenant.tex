@@ -1,0 +1,39 @@
+% Diagrama 2: Flujo de Arquitectura Multi-Tenant y Doble Barrera de Aislamiento
+\begin{tikzpicture}[
+    node distance=0.65cm and 0.8cm,
+    stepbox/.style={rectangle, rounded corners=3pt, draw=azulhotel, line width=0.8pt, fill=white, text width=12.8cm, minimum height=0.95cm, align=left, inner sep=5pt, font=\footnotesize},
+    guardbox/.style={rectangle, rounded corners=3pt, draw=azulhotel!90!black, line width=1pt, fill=azulclaro!45, text width=12.8cm, minimum height=1.05cm, align=left, inner sep=5pt, font=\footnotesize},
+    arrow/.style={-Stealth, thick, draw=azulhotel}
+]
+
+\node[stepbox] (s1) {\textbf{1. Cliente Web Angular (\texttt{auth.interceptor.ts}):} Adjunta en cada solicitud HTTP el encabezado \texttt{Authorization: Bearer <JWT>} (con claims \texttt{NameIdentifier}, \texttt{Role}, \texttt{HotelId}) y el encabezado expl\'icito \texttt{X-Hotel-Id} de la sede activa seleccionada.};
+
+\node[stepbox, below=of s1] (s2) {\textbf{2. Autenticaci\'on y Estado de Cuenta (\texttt{JwtBearer} + \texttt{TenantResolutionMiddleware}):} Verifica firma HMAC-SHA256, expiraci\'on sin margen (\texttt{ClockSkew = Zero}) y consulta en BD que el usuario contin\'ue activo (\texttt{Users.IsActive == true}); de lo contrario rechaza con \textbf{HTTP 401}.};
+
+\node[guardbox, below=of s2] (s3) {\textbf{3. Primera Barrera Multi-Tenant (\texttt{TenantResolutionMiddleware}):} Extrae \texttt{X-Hotel-Id} o el claim \texttt{HotelId}.
+\begin{itemize}[leftmargin=0.45cm, topsep=1pt, itemsep=0pt]
+    \item \textbf{Roles Globales (\texttt{AdminGlobal}, \texttt{Socio}, \texttt{Auditor}):} Si \texttt{X-Hotel-Id = 0} (o sin sede), activa \texttt{ITenantContext.IsGlobalBypass = true}. Si indican una sede espec\'ifica, fija \texttt{CurrentHotelId}.
+    \item \textbf{Roles de Sede (\texttt{AdminSede}, \texttt{Recepcionista}, \texttt{Housekeeping}):} Comprueba pertenencia en \texttt{dbo.HotelUsers}. Si el usuario no tiene asignada la sede solicitada, aborta inmediatamente con \textbf{HTTP 404 Not Found} (RF-07).
+\end{itemize}};
+
+\node[guardbox, below=of s3] (s4) {\textbf{4. Segunda Barrera de Autorizaci\'on (\texttt{[Authorize(Roles)]} + \texttt{TenantAuthorizationHelper}):}
+\begin{itemize}[leftmargin=0.45cm, topsep=1pt, itemsep=0pt]
+    \item Valida que el rol tenga permiso sobre el endpoint (si no, retorna \textbf{HTTP 403 Forbidden}, RF-06).
+    \item \texttt{ResolveAuthorizedHotelId}: Impide que un rol de sede manipule el par\'ametro \texttt{?hotelId=} hacia otra sede o hacia \texttt{hotelId=0} (\textbf{HTTP 403}).
+    \item Valida integridad referencial intra-sede (que \texttt{RoomTypeId}, \texttt{RoomId}, \texttt{GuestId}, \texttt{ServiceId} y \texttt{CashShiftId} pertenezcan al mismo \texttt{HotelId}).
+\end{itemize}};
+
+\node[guardbox, below=of s4] (s5) {\textbf{5. Tercera Barrera en Capa de Datos (\texttt{HotelDbContext} --- 16 Global Query Filters):}
+Todas las consultas LINQ de EF Core inyectan autom\'aticamente el predicado:
+\texttt{\_tenantContext.IsGlobalBypass || (\_tenantContext.CurrentHotelId != null \&\& e.HotelId == \_tenantContext.CurrentHotelId)}.
+Cualquier acceso directo por ID (\textit{IDOR}) sobre un registro de otra sede no devuelve filas y responde \textbf{HTTP 404 Not Found}.};
+
+\node[stepbox, below=of s5] (s6) {\textbf{6. Persistencia y Trazabilidad SQL Server (\texttt{dbo.AuditLogs}):} Las escrituras se ejecutan en la tabla compartida discriminada por \texttt{HotelId}, disparando \texttt{SaveChangesAsync} (nivel \texttt{Tecnico}) y \texttt{HttpAuditMiddleware} (nivel \texttt{Http}, incluyendo consultas inter-sedes \texttt{/api/availability/cross-hotel}).};
+
+\draw[arrow] (s1) -- (s2);
+\draw[arrow] (s2) -- (s3);
+\draw[arrow] (s3) -- (s4);
+\draw[arrow] (s4) -- (s5);
+\draw[arrow] (s5) -- (s6);
+
+\end{tikzpicture}

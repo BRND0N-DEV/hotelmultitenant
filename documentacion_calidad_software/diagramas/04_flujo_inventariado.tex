@@ -1,0 +1,47 @@
+% Diagrama 4: Diagrama de Flujo del Proceso de Inventariado Hotelero (Unidades Físicas, Estados y Consumos)
+\begin{tikzpicture}[
+    node distance=0.6cm and 1.1cm,
+    proc/.style={rectangle, rounded corners=3pt, draw=azulhotel, line width=0.8pt, fill=white, text width=5.6cm, minimum height=0.85cm, align=center, font=\scriptsize},
+    dec/.style={diamond, aspect=2.3, draw=azulhotel!90!black, line width=0.8pt, fill=azulclaro!50, text width=3.2cm, align=center, inner sep=1pt, font=\scriptsize\bfseries},
+    term/.style={rectangle, rounded corners=8pt, draw=azulhotel, line width=1pt, fill=azulclaro!75, text width=4.4cm, minimum height=0.75cm, align=center, font=\scriptsize\bfseries},
+    err/.style={rectangle, rounded corners=3pt, draw=red!75!black, line width=0.8pt, fill=red!10, text width=3.8cm, minimum height=0.75cm, align=center, font=\scriptsize},
+    arrow/.style={-Stealth, thick, draw=azulhotel}
+]
+
+\node[term] (start) at (0, 0) {1. Parametrizaci\'on por Sede (\texttt{HotelId})\\ Tipolog\'ias (\texttt{RoomTypes}) y Servicios (\texttt{AdditionalServices})};
+
+\node[proc, below=0.55cm of start] (alta) {2. Alta de Unidad F\'isica (\texttt{Rooms})\\ Unicidad \texttt{(HotelId, RoomNumber)}, \texttt{RowVersion}\\ Estado inicial: \texttt{Disponible} + \texttt{Limpia}};
+
+\node[dec, below=0.6cm of alta] (disp) {?`Sin traslape en\\ \texttt{[CheckIn, CheckOut)}?};
+
+\node[err, right=1.3cm of disp] (over) {Bloqueo Trigger SQL / API\\ \textbf{HTTP 409 Conflict}\\ (RF-24 / RNF-11)};
+
+\node[proc, below=0.65cm of disp] (res) {3. Reserva Creada (\texttt{Pendiente} / \texttt{Confirmada})\\ Idempotencia (\texttt{Idempotency-Key}) + Apertura de \texttt{Folio}};
+
+\node[dec, below=0.6cm of res] (chk_cond) {?`Hab. \texttt{Disponible}/\texttt{Limpia}\\ y Habeas Data?};
+
+\node[err, right=1.3cm of chk_cond] (chk_err) {Rechazo de Check-In\\ \textbf{HTTP 400 / 422}\\ (RF-31 / RF-46)};
+
+\node[proc, below=0.65cm of chk_cond] (checkin) {4. Ejecuci\'on de Check-In y Consumos de Cat\'alogo\\ Hab. pasa a \texttt{Ocupada}; cargos inmutables en \texttt{FolioCharges}\\ (S\'olo servicios con \texttt{IsActive = true}, RF-17 / RF-36)};
+
+\node[dec, below=0.6cm of checkin] (bal_cond) {?`Saldo de Folio\\ \texttt{Balance == 0}?};
+
+\node[err, right=1.3cm of bal_cond] (bal_err) {Bloqueo Check-Out\\ \textbf{HTTP 400 Bad Request}\\ (RF-40)};
+
+\node[proc, below=0.65cm of bal_cond] (checkout) {5. Check-Out y Transici\'on a \texttt{Liquidada}\\ Hab. pasa autom\'aticamente a \texttt{Disponible} + \texttt{Sucia} (RF-34)};
+
+\node[term, below=0.55cm of checkout] (hk_clean) {6. Ciclo Housekeeping (\texttt{PUT /api/housekeeping/rooms/\{id\}/status})\\ \texttt{Sucia} $\rightarrow$ \texttt{EnLimpieza} $\rightarrow$ \texttt{Limpia} (Rehabilita Check-In)};
+
+\draw[arrow] (start) -- (alta);
+\draw[arrow] (alta) -- (disp);
+\draw[arrow] (disp) -- node[above, font=\scriptsize] {No} (over);
+\draw[arrow] (disp) -- node[left, font=\scriptsize] {S\'i} (res);
+\draw[arrow] (res) -- (chk_cond);
+\draw[arrow] (chk_cond) -- node[above, font=\scriptsize] {No} (chk_err);
+\draw[arrow] (chk_cond) -- node[left, font=\scriptsize] {S\'i} (checkin);
+\draw[arrow] (checkin) -- (bal_cond);
+\draw[arrow] (bal_cond) -- node[above, font=\scriptsize] {No} (bal_err);
+\draw[arrow] (bal_cond) -- node[left, font=\scriptsize] {S\'i} (checkout);
+\draw[arrow] (checkout) -- (hk_clean);
+
+\end{tikzpicture}
