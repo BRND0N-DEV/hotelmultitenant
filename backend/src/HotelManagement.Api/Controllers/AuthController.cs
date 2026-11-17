@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
+using HotelManagement.Api.Services;
 using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
@@ -51,6 +52,11 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Credenciales incorrectas." });
         }
 
+        if (!user.IsActive)
+        {
+            return Unauthorized(new { message = "La cuenta de usuario se encuentra desactivada. Contacte al Administrador Global." });
+        }
+
         if (user.IsLockedOut())
         {
             return StatusCode(423, new { message = $"Cuenta bloqueada por 5 intentos fallidos consecutivos hasta {user.LockoutEnd:HH:mm} UTC." });
@@ -75,9 +81,17 @@ public class AuthController : ControllerBase
             user.ResetLoginLockout();
         }
 
-        // Determinar sede activa
+        // Determinar sede activa validando asignación para roles operativos
         int? activeHotelId = dto.PreferredHotelId;
-        if (!activeHotelId.HasValue)
+        if (activeHotelId.HasValue && !TenantAuthorizationHelper.IsGlobalRole(user.Role))
+        {
+            bool isAssigned = user.HotelUsers.Any(hu => hu.HotelId == activeHotelId.Value);
+            if (!isAssigned)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "No tiene asignación operativa para acceder a la sede solicitada." });
+            }
+        }
+        else if (!activeHotelId.HasValue)
         {
             var defaultAssignment = user.HotelUsers.FirstOrDefault(hu => hu.IsDefault) ?? user.HotelUsers.FirstOrDefault();
             activeHotelId = defaultAssignment?.HotelId;
@@ -167,6 +181,11 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "El token de renovación ha expirado. Por favor inicie sesión nuevamente." });
         }
 
+        if (!existingToken.User.IsActive)
+        {
+            return Unauthorized(new { message = "La cuenta de usuario se encuentra desactivada." });
+        }
+
         // Rotación de token
         var newRefreshToken = _tokenService.GenerateRefreshToken(existingToken.UserId);
         existingToken.RevokedAt = DateTime.UtcNow;
@@ -175,7 +194,15 @@ public class AuthController : ControllerBase
         _dbContext.RefreshTokens.Add(newRefreshToken);
 
         int? activeHotelId = dto.ActiveHotelId;
-        if (!activeHotelId.HasValue)
+        if (activeHotelId.HasValue && !TenantAuthorizationHelper.IsGlobalRole(existingToken.User.Role))
+        {
+            bool isAssigned = existingToken.User.HotelUsers.Any(hu => hu.HotelId == activeHotelId.Value);
+            if (!isAssigned)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "No tiene asignación operativa para acceder a la sede solicitada." });
+            }
+        }
+        else if (!activeHotelId.HasValue)
         {
             var defaultAssignment = existingToken.User.HotelUsers.FirstOrDefault(hu => hu.IsDefault) ?? existingToken.User.HotelUsers.FirstOrDefault();
             activeHotelId = defaultAssignment?.HotelId;
@@ -225,6 +252,7 @@ public class AuthController : ControllerBase
             .FirstOrDefaultAsync(u => u.UserId == _currentUserService.UserId.Value);
 
         if (user == null) return NotFound();
+        if (!user.IsActive) return Unauthorized(new { message = "La cuenta de usuario se encuentra desactivada." });
 
         int? activeHotelId = _tenantContext.CurrentHotelId;
         var activeHotel = activeHotelId.HasValue 
@@ -285,6 +313,7 @@ public class AuthController : ControllerBase
             .FirstOrDefaultAsync(u => u.UserId == _currentUserService.UserId.Value);
 
         if (user == null) return NotFound(new { message = "Usuario no encontrado." });
+        if (!user.IsActive) return Unauthorized(new { message = "La cuenta de usuario se encuentra desactivada." });
 
         var hotel = await _dbContext.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId);
         if (hotel == null)

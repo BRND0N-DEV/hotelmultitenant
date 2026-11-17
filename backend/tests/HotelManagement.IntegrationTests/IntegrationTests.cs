@@ -148,12 +148,44 @@ public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactor
         var token = await AuthenticateAsync("recepcion.bogota@hotelchain.com", "Admin123*!", 1);
         string idempotencyKey = Guid.NewGuid().ToString();
 
-        int offset = new Random().Next(100, 500);
+        // Buscar habitación y rango realmente libre para evitar colisiones con ejecuciones previas en la BD
+        int targetRoomId = 3;
+        var checkIn = DateTime.UtcNow.Date.AddDays(400);
+        var checkOut = checkIn.AddDays(3);
+        for (int attempt = 0; attempt < 25; attempt++)
+        {
+            var candidateIn = DateTime.UtcNow.Date.AddDays(400 + attempt * 5);
+            var candidateOut = candidateIn.AddDays(3);
+            var availReq = new HttpRequestMessage(HttpMethod.Post, "/api/availability/search")
+            {
+                Content = JsonContent.Create(new AvailabilitySearchRequestDto
+                {
+                    CheckInDate = candidateIn,
+                    CheckOutDate = candidateOut,
+                    Adults = 2
+                })
+            };
+            availReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            availReq.Headers.Add("X-Hotel-Id", "1");
+            var availResp = await _client.SendAsync(availReq);
+            if (availResp.IsSuccessStatusCode)
+            {
+                var available = await availResp.Content.ReadFromJsonAsync<List<AvailableRoomResponseDto>>();
+                if (available != null && available.Count > 0)
+                {
+                    targetRoomId = available[0].RoomId;
+                    checkIn = candidateIn;
+                    checkOut = candidateOut;
+                    break;
+                }
+            }
+        }
+
         var reservationDto = new CreateReservationDto
         {
-            RoomId = 3, // Habitación 103 (Doble Superior)
-            CheckInDate = DateTime.UtcNow.Date.AddDays(offset),
-            CheckOutDate = DateTime.UtcNow.Date.AddDays(offset + 3),
+            RoomId = targetRoomId,
+            CheckInDate = checkIn,
+            CheckOutDate = checkOut,
             Adults = 2,
             CancellationPolicyId = 1,
             PrimaryGuest = new CreateGuestDto
@@ -168,40 +200,58 @@ public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactor
             }
         };
 
-        // Primera petición
-        var request1 = new HttpRequestMessage(HttpMethod.Post, "/api/reservations")
+        int? createdReservationId = null;
+        try
         {
-            Content = JsonContent.Create(reservationDto)
-        };
-        request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request1.Headers.Add("Idempotency-Key", idempotencyKey);
-        request1.Headers.Add("X-Hotel-Id", "1");
+            // Primera petición
+            var request1 = new HttpRequestMessage(HttpMethod.Post, "/api/reservations")
+            {
+                Content = JsonContent.Create(reservationDto)
+            };
+            request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request1.Headers.Add("Idempotency-Key", idempotencyKey);
+            request1.Headers.Add("X-Hotel-Id", "1");
 
-        var response1 = await _client.SendAsync(request1);
-        if (response1.StatusCode != HttpStatusCode.Created)
-        {
-            var err = await response1.Content.ReadAsStringAsync();
-            throw new Exception($"API Error: {err}");
+            var response1 = await _client.SendAsync(request1);
+            if (response1.StatusCode != HttpStatusCode.Created)
+            {
+                var err = await response1.Content.ReadAsStringAsync();
+                throw new Exception($"API Error: {err}");
+            }
+            response1.StatusCode.Should().Be(HttpStatusCode.Created);
+            var res1 = await response1.Content.ReadFromJsonAsync<ReservationDto>();
+            createdReservationId = res1!.ReservationId;
+
+            // Segunda petición idéntica con la misma clave de idempotencia
+            var request2 = new HttpRequestMessage(HttpMethod.Post, "/api/reservations")
+            {
+                Content = JsonContent.Create(reservationDto)
+            };
+            request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request2.Headers.Add("Idempotency-Key", idempotencyKey);
+            request2.Headers.Add("X-Hotel-Id", "1");
+
+            var response2 = await _client.SendAsync(request2);
+
+            // Assert: Misma respuesta y mismo código de reserva sin crear duplicado
+            response2.StatusCode.Should().Be(HttpStatusCode.Created);
+            var res2 = await response2.Content.ReadFromJsonAsync<ReservationDto>();
+            res2!.Code.Should().Be(res1.Code);
+            res2.ReservationId.Should().Be(res1.ReservationId);
         }
-        response1.StatusCode.Should().Be(HttpStatusCode.Created);
-        var res1 = await response1.Content.ReadFromJsonAsync<ReservationDto>();
-
-        // Segunda petición idéntica con la misma clave de idempotencia
-        var request2 = new HttpRequestMessage(HttpMethod.Post, "/api/reservations")
+        finally
         {
-            Content = JsonContent.Create(reservationDto)
-        };
-        request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request2.Headers.Add("Idempotency-Key", idempotencyKey);
-        request2.Headers.Add("X-Hotel-Id", "1");
-
-        var response2 = await _client.SendAsync(request2);
-
-        // Assert: Misma respuesta y mismo código de reserva sin crear duplicado
-        response2.StatusCode.Should().Be(HttpStatusCode.Created);
-        var res2 = await response2.Content.ReadFromJsonAsync<ReservationDto>();
-        res2!.Code.Should().Be(res1!.Code);
-        res2.ReservationId.Should().Be(res1.ReservationId);
+            if (createdReservationId.HasValue)
+            {
+                var cancelReq = new HttpRequestMessage(HttpMethod.Post, $"/api/reservations/{createdReservationId.Value}/cancel")
+                {
+                    Content = JsonContent.Create(new CancelReservationDto { Reason = "Limpieza automática prueba de idempotencia" })
+                };
+                cancelReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                cancelReq.Headers.Add("X-Hotel-Id", "1");
+                await _client.SendAsync(cancelReq);
+            }
+        }
     }
 
     [Fact]

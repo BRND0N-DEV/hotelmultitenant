@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
+using HotelManagement.Api.Services;
 using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
@@ -19,17 +20,21 @@ public class RoomTypesController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public RoomTypesController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public RoomTypesController(IHotelDbContext dbContext, ITenantContext tenantContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<RoomTypeDto>>> GetRoomTypes([FromQuery] int? hotelId, [FromQuery] bool? onlyActive)
     {
-        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var query = _dbContext.RoomTypes.Where(rt => rt.HotelId == targetHotelId);
         if (onlyActive == true)
@@ -58,6 +63,7 @@ public class RoomTypesController : ControllerBase
         return Ok(types);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<RoomTypeDto>> GetRoomType(int id)
     {
@@ -65,7 +71,10 @@ public class RoomTypesController : ControllerBase
             .Include(t => t.Rooms)
             .FirstOrDefaultAsync(t => t.RoomTypeId == id);
 
-        if (rt == null) return NotFound(new { message = "Tipo de habitación no encontrado." });
+        if (rt == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, rt.HotelId))
+        {
+            return NotFound(new { message = "Tipo de habitación no encontrado." });
+        }
 
         return Ok(new RoomTypeDto
         {
@@ -87,7 +96,8 @@ public class RoomTypesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<RoomTypeDto>> CreateRoomType([FromBody] CreateRoomTypeDto dto, [FromQuery] int? hotelId)
     {
-        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         if (string.IsNullOrWhiteSpace(dto.Name))
         {
@@ -157,7 +167,10 @@ public class RoomTypesController : ControllerBase
             .Include(t => t.Rooms)
             .FirstOrDefaultAsync(t => t.RoomTypeId == id);
 
-        if (rt == null) return NotFound(new { message = "Tipo de habitación no encontrado." });
+        if (rt == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, rt.HotelId))
+        {
+            return NotFound(new { message = "Tipo de habitación no encontrado." });
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Name))
         {
@@ -218,8 +231,11 @@ public class RoomTypesController : ControllerBase
     [HttpPatch("{id}/toggle-status")]
     public async Task<IActionResult> ToggleRoomTypeStatus(int id)
     {
-        var rt = await _dbContext.RoomTypes.FindAsync(id);
-        if (rt == null) return NotFound(new { message = "Tipo de habitación no encontrado." });
+        var rt = await _dbContext.RoomTypes.FirstOrDefaultAsync(t => t.RoomTypeId == id);
+        if (rt == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, rt.HotelId))
+        {
+            return NotFound(new { message = "Tipo de habitación no encontrado." });
+        }
 
         rt.IsActive = !rt.IsActive;
         await _dbContext.SaveChangesAsync();
@@ -240,17 +256,21 @@ public class RoomsController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public RoomsController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public RoomsController(IHotelDbContext dbContext, ITenantContext tenantContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<RoomDto>>> GetRooms([FromQuery] int? hotelId, [FromQuery] int? floor, [FromQuery] RoomOperationalStatus? status, [FromQuery] bool includeInactive = false)
     {
-        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var query = _dbContext.Rooms
             .Include(r => r.RoomType)
@@ -286,6 +306,7 @@ public class RoomsController : ControllerBase
         return Ok(rooms);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<RoomDto>> GetRoom(int id)
     {
@@ -293,7 +314,10 @@ public class RoomsController : ControllerBase
             .Include(r => r.RoomType)
             .FirstOrDefaultAsync(r => r.RoomId == id);
 
-        if (r == null) return NotFound(new { message = "Habitación no encontrada en la sede activa." });
+        if (r == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, r.HotelId))
+        {
+            return NotFound(new { message = "Habitación no encontrada en la sede activa." });
+        }
 
         return Ok(new RoomDto
         {
@@ -313,9 +337,10 @@ public class RoomsController : ControllerBase
 
     [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede}")]
     [HttpPost]
-    public async Task<ActionResult<RoomDto>> CreateRoom([FromBody] CreateRoomDto dto)
+    public async Task<ActionResult<RoomDto>> CreateRoom([FromBody] CreateRoomDto dto, [FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         if (string.IsNullOrWhiteSpace(dto.RoomNumber))
         {
@@ -331,10 +356,11 @@ public class RoomsController : ControllerBase
             return BadRequest(new { message = $"El número de habitación '{dto.RoomNumber}' ya existe en esta sede. Dos sedes distintas sí pueden tener el mismo número." });
         }
 
-        var roomType = await _dbContext.RoomTypes.FindAsync(dto.RoomTypeId);
+        var roomType = await _dbContext.RoomTypes
+            .FirstOrDefaultAsync(rt => rt.RoomTypeId == dto.RoomTypeId && rt.HotelId == targetHotelId);
         if (roomType == null)
         {
-            return BadRequest(new { message = "El tipo de habitación especificado no existe." });
+            return BadRequest(new { message = "El tipo de habitación especificado no existe en la sede activa." });
         }
 
         var room = new Room
@@ -375,7 +401,10 @@ public class RoomsController : ControllerBase
             .Include(r => r.RoomType)
             .FirstOrDefaultAsync(r => r.RoomId == id);
 
-        if (room == null) return NotFound(new { message = "Habitación no encontrada." });
+        if (room == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, room.HotelId))
+        {
+            return NotFound(new { message = "Habitación no encontrada." });
+        }
 
         if (string.IsNullOrWhiteSpace(dto.RoomNumber))
         {
@@ -390,10 +419,11 @@ public class RoomsController : ControllerBase
             return BadRequest(new { message = $"El número de habitación '{dto.RoomNumber}' ya existe en esta sede." });
         }
 
-        var roomType = await _dbContext.RoomTypes.FindAsync(dto.RoomTypeId);
+        var roomType = await _dbContext.RoomTypes
+            .FirstOrDefaultAsync(rt => rt.RoomTypeId == dto.RoomTypeId && rt.HotelId == room.HotelId);
         if (roomType == null)
         {
-            return BadRequest(new { message = "El tipo de habitación especificado no existe." });
+            return BadRequest(new { message = "El tipo de habitación especificado no existe en esta sede." });
         }
 
         room.RoomNumber = dto.RoomNumber.Trim();
@@ -422,19 +452,43 @@ public class RoomsController : ControllerBase
         });
     }
 
-    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateRoomStatus(int id, [FromBody] UpdateRoomStatusDto dto)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
-        var room = await _dbContext.Rooms.FindAsync(id);
-        if (room == null || (!_tenantContext.IsGlobalBypass && room.HotelId != targetHotelId))
+        var room = await _dbContext.Rooms.FirstOrDefaultAsync(r => r.RoomId == id);
+        if (room == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, room.HotelId))
         {
             return NotFound(new { message = "Habitación no encontrada en la sede activa." });
         }
 
-        if (dto.OperationalStatus.HasValue) room.OperationalStatus = dto.OperationalStatus.Value;
-        if (dto.CleaningStatus.HasValue) room.CleaningStatus = dto.CleaningStatus.Value;
+        if (dto.OperationalStatus.HasValue && dto.OperationalStatus.Value == RoomOperationalStatus.Ocupada &&
+            room.OperationalStatus != RoomOperationalStatus.Ocupada)
+        {
+            return UnprocessableEntity(new { message = "El estado 'Ocupada' solo se asigna mediante el proceso formal de Check-In." });
+        }
+
+        if (dto.CleaningStatus.HasValue)
+        {
+            room.CleaningStatus = dto.CleaningStatus.Value;
+            if (dto.CleaningStatus.Value == RoomCleaningStatus.Limpia && room.OperationalStatus == RoomOperationalStatus.FueraDeServicio)
+            {
+                room.OperationalStatus = RoomOperationalStatus.Disponible;
+            }
+        }
+
+        if (dto.OperationalStatus.HasValue)
+        {
+            if (dto.OperationalStatus.Value == RoomOperationalStatus.Disponible && room.CleaningStatus != RoomCleaningStatus.Limpia)
+            {
+                room.OperationalStatus = RoomOperationalStatus.FueraDeServicio;
+            }
+            else
+            {
+                room.OperationalStatus = dto.OperationalStatus.Value;
+            }
+        }
+
         if (dto.Notes != null) room.Notes = dto.Notes;
 
         await _dbContext.SaveChangesAsync();

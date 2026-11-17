@@ -31,11 +31,15 @@ public class HousekeepingController : ControllerBase
         _currentUserService = currentUserService;
     }
 
-    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
     [HttpGet("rooms")]
     public async Task<ActionResult<IEnumerable<RoomDto>>> GetHousekeepingRooms([FromQuery] int? floor, [FromQuery] RoomCleaningStatus? cleaningStatus)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        if (!_tenantContext.CurrentHotelId.HasValue)
+        {
+            return Forbid();
+        }
+        int targetHotelId = _tenantContext.CurrentHotelId.Value;
 
         var query = _dbContext.Rooms
             .Include(r => r.RoomType)
@@ -67,15 +71,45 @@ public class HousekeepingController : ControllerBase
         return Ok(rooms);
     }
 
-    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
+    [Authorize(Roles = $"{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping}")]
     [HttpPut("rooms/{roomId}/status")]
     public async Task<IActionResult> UpdateCleaningStatus(int roomId, [FromBody] UpdateRoomStatusDto dto)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        if (!_tenantContext.CurrentHotelId.HasValue)
+        {
+            return Forbid();
+        }
+        int targetHotelId = _tenantContext.CurrentHotelId.Value;
         var room = await _dbContext.Rooms.FindAsync(roomId);
         if (room == null || (!_tenantContext.IsGlobalBypass && room.HotelId != targetHotelId))
         {
             return NotFound(new { message = "Habitación no encontrada en la sede activa." });
+        }
+
+        if (_currentUserService.Role == UserRole.Housekeeping &&
+            dto.OperationalStatus.HasValue &&
+            dto.OperationalStatus.Value != room.OperationalStatus)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Acceso denegado: El rol Camarería solo puede actualizar el estado de limpieza de las habitaciones, no su estado operacional o de mantenimiento."
+            });
+        }
+
+        if (dto.CleaningStatus.HasValue && !Enum.IsDefined(typeof(RoomCleaningStatus), dto.CleaningStatus.Value))
+        {
+            return BadRequest(new { message = "El estado de limpieza especificado no es válido." });
+        }
+
+        if (dto.OperationalStatus.HasValue && !Enum.IsDefined(typeof(RoomOperationalStatus), dto.OperationalStatus.Value))
+        {
+            return BadRequest(new { message = "El estado operacional especificado no es válido." });
+        }
+
+        if (dto.OperationalStatus.HasValue && dto.OperationalStatus.Value == RoomOperationalStatus.Ocupada &&
+            room.OperationalStatus != RoomOperationalStatus.Ocupada)
+        {
+            return UnprocessableEntity(new { message = "El estado 'Ocupada' solo se asigna mediante el proceso formal de Check-In." });
         }
 
         var oldOperational = room.OperationalStatus;

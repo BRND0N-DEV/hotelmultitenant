@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
 using HotelManagement.Application.Services;
@@ -25,19 +27,22 @@ public class ReservationsController : ControllerBase
     private readonly ICurrentUserService _currentUserService;
     private readonly IQrCodeService _qrCodeService;
     private readonly IEmailNotificationService _emailService;
+    private readonly IConfiguration _configuration;
 
     public ReservationsController(
         IHotelDbContext dbContext,
         ITenantContext tenantContext,
         ICurrentUserService currentUserService,
         IQrCodeService qrCodeService,
-        IEmailNotificationService emailService)
+        IEmailNotificationService emailService,
+        IConfiguration configuration)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
         _currentUserService = currentUserService;
         _qrCodeService = qrCodeService;
         _emailService = emailService;
+        _configuration = configuration;
     }
 
     [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
@@ -569,6 +574,30 @@ public class ReservationsController : ControllerBase
     [HttpPost("{id}/state")]
     public async Task<IActionResult> ChangeState(int id, [FromBody] ChangeReservationStateDto dto)
     {
+        if (dto.NewStatus == ReservationStatus.CheckIn)
+        {
+            throw new InvalidStateTransitionException(
+                "Actual",
+                dto.NewStatus.ToString(),
+                "Debe utilizar el endpoint dedicado '/check-in' para validar limpieza de habitación y consentimiento Habeas Data.");
+        }
+
+        if (dto.NewStatus == ReservationStatus.CheckOut || dto.NewStatus == ReservationStatus.Liquidada)
+        {
+            throw new InvalidStateTransitionException(
+                "Actual",
+                dto.NewStatus.ToString(),
+                "Debe utilizar el endpoint dedicado '/check-out' para validar el cierre del folio y saldo cero.");
+        }
+
+        if (dto.NewStatus == ReservationStatus.Anulada)
+        {
+            throw new InvalidStateTransitionException(
+                "Actual",
+                dto.NewStatus.ToString(),
+                "Debe utilizar el endpoint dedicado '/cancel' para validar la política de penalidad y las restricciones del rol.");
+        }
+
         var r = await _dbContext.Reservations
             .Include(r => r.Room)
             .FirstOrDefaultAsync(r => r.ReservationId == id);
@@ -581,8 +610,8 @@ public class ReservationsController : ControllerBase
         var prevStatus = r.Status.ToString();
         r.Status = dto.NewStatus;
 
-        // Liberar habitación si se anula o marca No-Show (RF-28)
-        if (dto.NewStatus == ReservationStatus.Anulada || dto.NewStatus == ReservationStatus.NoShow)
+        // Liberar habitación si se marca No-Show (RF-28)
+        if (dto.NewStatus == ReservationStatus.NoShow)
         {
             if (r.Room.OperationalStatus == RoomOperationalStatus.Ocupada)
             {
@@ -607,6 +636,11 @@ public class ReservationsController : ControllerBase
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> CancelReservation(int id, [FromBody] CancelReservationDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Reason))
+        {
+            return BadRequest(new { message = "Es obligatorio indicar un motivo para cancelar la reserva." });
+        }
+
         var r = await _dbContext.Reservations
             .Include(r => r.Room)
             .Include(r => r.CancellationPolicy)
@@ -615,18 +649,35 @@ public class ReservationsController : ControllerBase
 
         if (r == null) return NotFound(new { message = "Reserva no encontrada." });
 
-        if (r.Status == ReservationStatus.CheckIn || r.Status == ReservationStatus.CheckOut || r.Status == ReservationStatus.Liquidada)
-        {
-            return BadRequest(new { message = "No se puede cancelar una estancia que ya ha iniciado o sido completada." });
-        }
+        // RF-26: Validar transición formal hacia Anulada (HTTP 422 si CheckIn/CheckOut/Liquidada/Anulada/NoShow)
+        ReservationStateMachine.ValidateTransition(r.Status, ReservationStatus.Anulada);
 
         // RF-28 / HU-13: Cálculo de penalidad usando la política vigente al momento de reservar
         var hoursUntilCheckIn = (r.CheckInDate - DateTime.UtcNow.Date).TotalHours;
-        decimal penalty = 0;
+        bool isOutsideFreeWindow = (r.CancellationPolicy.FreeCancellationHours <= 0 && r.CancellationPolicy.PenaltyPercent > 0)
+                                   || hoursUntilCheckIn < r.CancellationPolicy.FreeCancellationHours;
+        decimal penalty = isOutsideFreeWindow
+            ? Math.Round(r.TotalAmount * (r.CancellationPolicy.PenaltyPercent / 100m), 2)
+            : 0m;
 
-        if (hoursUntilCheckIn < r.CancellationPolicy.FreeCancellationHours)
+        // Regla de negocio "Con límite" para Recepción: solo sin penalidad y dentro de FreeCancellationHours
+        if (_currentUserService.Role == UserRole.Recepcionista)
         {
-            penalty = Math.Round(r.TotalAmount * (r.CancellationPolicy.PenaltyPercent / 100m), 2);
+            bool allowOutsideFreeWindow = _configuration.GetValue<bool>("ReceptionistCancellation:AllowOutsideFreeWindow", false);
+            decimal maxPenaltyAmount = _configuration.GetValue<decimal>("ReceptionistCancellation:MaxPenaltyAmount", 0m);
+
+            if ((!allowOutsideFreeWindow && isOutsideFreeWindow) || penalty > maxPenaltyAmount)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "Restricción RBAC ('Con límite'): Recepción solo está autorizada a cancelar reservas sin penalidad dentro de las horas gratuitas de la política. Esta cancelación requiere autorización de Administrador de Sede.",
+                    hoursUntilCheckIn,
+                    freeCancellationHours = r.CancellationPolicy.FreeCancellationHours,
+                    calculatedPenalty = penalty,
+                    maxAllowedPenalty = maxPenaltyAmount,
+                    policyUsed = r.CancellationPolicy.Name
+                });
+            }
         }
 
         r.PenaltyAmount = penalty;

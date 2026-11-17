@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
+using HotelManagement.Api.Services;
 using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
@@ -19,18 +20,22 @@ public class RatesController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public RatesController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public RatesController(IHotelDbContext dbContext, ITenantContext tenantContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
     // --- SEASONS (TEMPORADAS) ---
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("seasons")]
-    public async Task<ActionResult<IEnumerable<SeasonDto>>> GetSeasons()
+    public async Task<ActionResult<IEnumerable<SeasonDto>>> GetSeasons([FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var seasons = await _dbContext.Seasons
             .Where(s => s.HotelId == targetHotelId)
@@ -52,9 +57,10 @@ public class RatesController : ControllerBase
 
     [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede}")]
     [HttpPost("seasons")]
-    public async Task<ActionResult<SeasonDto>> CreateSeason([FromBody] CreateSeasonDto dto)
+    public async Task<ActionResult<SeasonDto>> CreateSeason([FromBody] CreateSeasonDto dto, [FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         if (dto.EndDate < dto.StartDate)
         {
@@ -99,10 +105,12 @@ public class RatesController : ControllerBase
     }
 
     // --- PROMOTIONS (PROMOCIONES) ---
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("promotions")]
-    public async Task<ActionResult<IEnumerable<PromotionDto>>> GetPromotions()
+    public async Task<ActionResult<IEnumerable<PromotionDto>>> GetPromotions([FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var promos = await _dbContext.Promotions
             .Where(p => p.HotelId == targetHotelId)
@@ -124,9 +132,10 @@ public class RatesController : ControllerBase
 
     [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede}")]
     [HttpPost("promotions")]
-    public async Task<ActionResult<PromotionDto>> CreatePromotion([FromBody] CreatePromotionDto dto)
+    public async Task<ActionResult<PromotionDto>> CreatePromotion([FromBody] CreatePromotionDto dto, [FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         bool codeExists = await _dbContext.Promotions
             .AnyAsync(p => p.HotelId == targetHotelId && p.Code == dto.Code.Trim().ToUpperInvariant());
@@ -164,10 +173,12 @@ public class RatesController : ControllerBase
     }
 
     // --- TAXES & POLICIES ---
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("taxes")]
-    public async Task<ActionResult<IEnumerable<HotelTaxDto>>> GetTaxes()
+    public async Task<ActionResult<IEnumerable<HotelTaxDto>>> GetTaxes([FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var taxes = await _dbContext.Taxes
             .Where(t => t.HotelId == targetHotelId)
@@ -184,10 +195,12 @@ public class RatesController : ControllerBase
         return Ok(taxes);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("cancellation-policies")]
-    public async Task<ActionResult<IEnumerable<CancellationPolicyDto>>> GetCancellationPolicies()
+    public async Task<ActionResult<IEnumerable<CancellationPolicyDto>>> GetCancellationPolicies([FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var policies = await _dbContext.CancellationPolicies
             .Where(cp => cp.HotelId == targetHotelId)
@@ -214,17 +227,21 @@ public class ServicesController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public ServicesController(IHotelDbContext dbContext, ITenantContext tenantContext)
+    public ServicesController(IHotelDbContext dbContext, ITenantContext tenantContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdditionalServiceDto>>> GetServices([FromQuery] int? hotelId, [FromQuery] bool? onlyActive)
     {
-        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         var query = _dbContext.AdditionalServices
             .Where(s => (_tenantContext.IsGlobalBypass && !hotelId.HasValue) || s.HotelId == targetHotelId)
@@ -252,11 +269,15 @@ public class ServicesController : ControllerBase
         return Ok(services);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor},{UserRole.Socio}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<AdditionalServiceDto>> GetService(int id)
     {
-        var s = await _dbContext.AdditionalServices.FindAsync(id);
-        if (s == null) return NotFound(new { message = "Servicio no encontrado." });
+        var s = await _dbContext.AdditionalServices.FirstOrDefaultAsync(x => x.ServiceId == id);
+        if (s == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, s.HotelId))
+        {
+            return NotFound(new { message = "Servicio no encontrado." });
+        }
 
         return Ok(new AdditionalServiceDto
         {
@@ -273,7 +294,8 @@ public class ServicesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<AdditionalServiceDto>> CreateService([FromBody] CreateAdditionalServiceDto dto, [FromQuery] int? hotelId)
     {
-        int targetHotelId = hotelId ?? _tenantContext.CurrentHotelId ?? 1;
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId);
+        if (authError != null) return authError;
 
         if (string.IsNullOrWhiteSpace(dto.Name))
         {
@@ -317,8 +339,11 @@ public class ServicesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<AdditionalServiceDto>> UpdateService(int id, [FromBody] UpdateAdditionalServiceDto dto)
     {
-        var s = await _dbContext.AdditionalServices.FindAsync(id);
-        if (s == null) return NotFound(new { message = "Servicio no encontrado." });
+        var s = await _dbContext.AdditionalServices.FirstOrDefaultAsync(x => x.ServiceId == id);
+        if (s == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, s.HotelId))
+        {
+            return NotFound(new { message = "Servicio no encontrado." });
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Name))
         {
@@ -357,8 +382,11 @@ public class ServicesController : ControllerBase
     [HttpPatch("{id}/toggle-status")]
     public async Task<IActionResult> ToggleServiceStatus(int id)
     {
-        var s = await _dbContext.AdditionalServices.FindAsync(id);
-        if (s == null) return NotFound(new { message = "Servicio no encontrado." });
+        var s = await _dbContext.AdditionalServices.FirstOrDefaultAsync(x => x.ServiceId == id);
+        if (s == null || !TenantAuthorizationHelper.HasTenantAccess(_tenantContext, s.HotelId))
+        {
+            return NotFound(new { message = "Servicio no encontrado." });
+        }
 
         s.IsActive = !s.IsActive;
         await _dbContext.SaveChangesAsync();

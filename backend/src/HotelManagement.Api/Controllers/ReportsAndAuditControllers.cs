@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
+using HotelManagement.Api.Services;
 using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
@@ -35,18 +36,22 @@ public class ReportsController : ControllerBase
 
     // RF-52, RF-53 / HU-26: Exportación de transacciones con metadatos y totales
     [HttpGet("transactions/excel")]
-    public async Task<IActionResult> ExportTransactionsExcel([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+    public async Task<IActionResult> ExportTransactionsExcel([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
-        var hotel = await _dbContext.Hotels.FindAsync(targetHotelId);
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId, allowConsolidatedZero: true);
+        if (authError != null) return authError;
+        var hotel = targetHotelId > 0 ? await _dbContext.Hotels.FindAsync(targetHotelId) : null;
+        string scopeName = targetHotelId > 0 ? (hotel?.Name?.ToUpperInvariant() ?? string.Empty) : "CADENA CONSOLIDADA";
 
         var query = _dbContext.FolioPayments
             .Include(p => p.Folio)
                 .ThenInclude(f => f.Reservation)
                     .ThenInclude(r => r.Guest)
             .Include(p => p.CreatedByUser)
-            .Where(p => p.Folio.HotelId == targetHotelId)
             .AsQueryable();
+
+        if (targetHotelId > 0)
+            query = query.Where(p => p.Folio.HotelId == targetHotelId);
 
         if (fromDate.HasValue) query = query.Where(p => p.CreatedAt >= fromDate.Value.Date);
         if (toDate.HasValue) query = query.Where(p => p.CreatedAt <= toDate.Value.Date.AddDays(1));
@@ -54,7 +59,7 @@ public class ReportsController : ControllerBase
         var payments = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
 
         var sb = new StringBuilder();
-        sb.AppendLine($"REPORTE DE TRANSACCIONES Y PAGOS - {hotel?.Name?.ToUpperInvariant()}");
+        sb.AppendLine($"REPORTE DE TRANSACCIONES Y PAGOS - {scopeName}");
         sb.AppendLine($"Emitido por: {_currentUserService.FullName} ({_currentUserService.Email}) | Fecha Emisión: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC");
         sb.AppendLine($"Filtro: Desde {(fromDate?.ToString("yyyy-MM-dd") ?? "Inicio")} Hasta {(toDate?.ToString("yyyy-MM-dd") ?? "Hoy")}");
         sb.AppendLine();
@@ -71,25 +76,33 @@ public class ReportsController : ControllerBase
         sb.AppendLine($",,,,,TOTAL RECAUDADO,,{totalAmount:F2},");
 
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-        string filename = $"Transacciones_{hotel?.Code}_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv";
+        string scopeCode = targetHotelId > 0 ? (hotel?.Code ?? "SEDE") : "CONSOLIDADO";
+        string filename = $"Transacciones_{scopeCode}_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv";
 
         return File(bytes, "text/csv; charset=utf-8", filename);
     }
 
     [HttpGet("guests/excel")]
-    public async Task<IActionResult> ExportGuestsExcel()
+    public async Task<IActionResult> ExportGuestsExcel([FromQuery] int? hotelId = null)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
-        var hotel = await _dbContext.Hotels.FindAsync(targetHotelId);
+        var authError = TenantAuthorizationHelper.ResolveAuthorizedHotelId(_tenantContext, _currentUserService, hotelId, out int targetHotelId, allowConsolidatedZero: true);
+        if (authError != null) return authError;
+        var hotel = targetHotelId > 0 ? await _dbContext.Hotels.FindAsync(targetHotelId) : null;
+        string scopeName = targetHotelId > 0 ? (hotel?.Name?.ToUpperInvariant() ?? string.Empty) : "CADENA CONSOLIDADA";
 
-        var guests = await _dbContext.Guests
+        var guestQuery = _dbContext.Guests
             .Include(g => g.Reservations)
-            .Where(g => g.HotelId == targetHotelId)
+            .AsQueryable();
+
+        if (targetHotelId > 0)
+            guestQuery = guestQuery.Where(g => g.HotelId == targetHotelId);
+
+        var guests = await guestQuery
             .OrderBy(g => g.LastName)
             .ToListAsync();
 
         var sb = new StringBuilder();
-        sb.AppendLine($"LISTADO GENERAL DE HUÉSPEDES - {hotel?.Name?.ToUpperInvariant()}");
+        sb.AppendLine($"LISTADO GENERAL DE HUÉSPEDES - {scopeName}");
         sb.AppendLine($"Emitido por: {_currentUserService.FullName} | Fecha Emisión: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC");
         sb.AppendLine();
         sb.AppendLine("ID Huésped,Tipo Documento,Número Documento,Nombre Completo,Correo Electrónico,Teléfono,Nacionalidad,Anonimizado,Reservas Realizadas");
@@ -100,7 +113,8 @@ public class ReportsController : ControllerBase
         }
 
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-        string filename = $"Huespedes_{hotel?.Code}_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv";
+        string scopeCode = targetHotelId > 0 ? (hotel?.Code ?? "SEDE") : "CONSOLIDADO";
+        string filename = $"Huespedes_{scopeCode}_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv";
 
         return File(bytes, "text/csv; charset=utf-8", filename);
     }
@@ -208,7 +222,20 @@ public class AuditController : ControllerBase
         // RBAC CONTINENTALIA SAS: AdminSede solo puede consultar la auditoría de su sede asignada
         if (_currentUserService.Role == UserRole.AdminSede)
         {
-            int localHotelId = _tenantContext.CurrentHotelId ?? 1;
+            if (!_tenantContext.CurrentHotelId.HasValue)
+            {
+                return Forbid();
+            }
+
+            int localHotelId = _tenantContext.CurrentHotelId.Value;
+            if (filter.HotelId.HasValue && filter.HotelId.Value != localHotelId)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "Acceso denegado: AdminSede solo puede consultar la auditoría de su sede asignada."
+                });
+            }
+
             query = query.Where(a => a.HotelId == localHotelId);
         }
         else if (filter.HotelId.HasValue && filter.HotelId.Value > 0)
@@ -346,7 +373,18 @@ public class UsersController : ControllerBase
 
         if (dto.AssignedHotelIds != null && dto.AssignedHotelIds.Count > 0)
         {
-            foreach (var hId in dto.AssignedHotelIds)
+            var distinctHotelIds = dto.AssignedHotelIds.Distinct().ToList();
+            var existingHotelIds = await _dbContext.Hotels
+                .Where(h => distinctHotelIds.Contains(h.HotelId))
+                .Select(h => h.HotelId)
+                .ToListAsync();
+
+            if (existingHotelIds.Count != distinctHotelIds.Count)
+            {
+                return BadRequest(new { message = "Una o más sedes asignadas no existen." });
+            }
+
+            foreach (var hId in distinctHotelIds)
             {
                 user.HotelUsers.Add(new HotelUser
                 {

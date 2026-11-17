@@ -112,10 +112,16 @@ public class FoliosController : ControllerBase
             return BadRequest(new { message = "El folio se encuentra cerrado. No se pueden registrar más consumos." });
         }
 
+        if (dto.Quantity <= 0)
+        {
+            return BadRequest(new { message = "La cantidad del consumo debe ser mayor a cero." });
+        }
+
         AdditionalService? service = null;
         if (dto.ServiceId.HasValue)
         {
-            service = await _dbContext.AdditionalServices.FindAsync(dto.ServiceId.Value);
+            service = await _dbContext.AdditionalServices
+                .FirstOrDefaultAsync(s => s.ServiceId == dto.ServiceId.Value && s.HotelId == folio.HotelId);
 
             // RF-17: Los servicios inactivos no deben estar disponibles para registrar consumos
             if (service == null || !service.IsActive)
@@ -125,6 +131,10 @@ public class FoliosController : ControllerBase
         }
 
         decimal unitPrice = dto.UnitPrice > 0 ? dto.UnitPrice : (service?.Price ?? 0);
+        if (dto.UnitPrice < 0 || unitPrice <= 0)
+        {
+            return BadRequest(new { message = "El valor unitario del consumo debe ser mayor a cero." });
+        }
         decimal amount = Math.Round(unitPrice * dto.Quantity, 2);
         decimal taxPercent = dto.TaxPercentage ?? (service?.Category == "Desayuno" || service?.Category == "Restaurante" ? 8.0m : 19.0m);
         decimal taxAmount = Math.Round(amount * (taxPercent / 100m), 2);
@@ -181,7 +191,15 @@ public class FoliosController : ControllerBase
                 .ThenInclude(f => f.Payments)
             .FirstOrDefaultAsync(c => c.ChargeId == chargeId);
 
-        if (charge == null) return NotFound(new { message = "Cargo no encontrado." });
+        if (charge == null || (!_tenantContext.IsGlobalBypass && _tenantContext.CurrentHotelId.HasValue && charge.Folio.HotelId != _tenantContext.CurrentHotelId.Value))
+        {
+            return NotFound(new { message = "Cargo no encontrado." });
+        }
+
+        if (charge.Folio.Status == FolioStatus.Cerrado)
+        {
+            return UnprocessableEntity(new { message = "No se pueden anular cargos de un folio cerrado." });
+        }
 
         if (charge.IsAnnulled)
         {
@@ -257,7 +275,18 @@ public class FoliosController : ControllerBase
         CashShift? shift = null;
         if (dto.CashShiftId.HasValue)
         {
-            shift = await _dbContext.CashShifts.FindAsync(dto.CashShiftId.Value);
+            shift = await _dbContext.CashShifts
+                .FirstOrDefaultAsync(cs => cs.CashShiftId == dto.CashShiftId.Value && cs.HotelId == folio.HotelId);
+
+            if (shift == null)
+            {
+                return NotFound(new { message = "El turno de caja especificado no existe en esta sede." });
+            }
+
+            if (shift.Status != ShiftStatus.Abierto)
+            {
+                return UnprocessableEntity(new { message = "No se pueden registrar pagos en un turno de caja cerrado." });
+            }
         }
         else
         {

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
 using HotelManagement.Application.Services;
+using HotelManagement.Api.Services;
 using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
@@ -57,6 +58,10 @@ public class DashboardController : ControllerBase
         else if (!filterHotelId.HasValue || filterHotelId.Value == 0)
         {
             _tenantContext.IsGlobalBypass = true;
+        }
+        else if (TenantAuthorizationHelper.IsGlobalRole(_currentUserService.Role))
+        {
+            _tenantContext.SetHotelContext(filterHotelId.Value);
         }
 
         var today = DateTime.UtcNow.Date;
@@ -140,14 +145,20 @@ public class DashboardController : ControllerBase
             });
         }
 
-        // Comparativa por hoteles si es vista consolidada (RF-49)
+        // Comparativa por hoteles: AdminSede estrictamente aislado a su sede asignada (RF-07 / RF-49)
         var comparisons = new List<HotelComparisonDto>();
-        var allHotels = await _dbContext.Hotels.Where(h => h.IsActive).ToListAsync();
+        var hotelsQuery = _dbContext.Hotels.Where(h => h.IsActive);
+        if (_currentUserService.Role == UserRole.AdminSede && filterHotelId.HasValue)
+        {
+            hotelsQuery = hotelsQuery.Where(h => h.HotelId == filterHotelId.Value);
+        }
+        var allHotels = await hotelsQuery.ToListAsync();
 
         foreach (var h in allHotels)
         {
-            int hTotalRooms = await _dbContext.Rooms.CountAsync(r => r.HotelId == h.HotelId && r.IsActive);
-            int hOccupied = await _dbContext.Reservations
+            int hTotalRooms = await _dbContext.Rooms.IgnoreQueryFilters()
+                .CountAsync(r => r.HotelId == h.HotelId && r.IsActive);
+            int hOccupied = await _dbContext.Reservations.IgnoreQueryFilters()
                 .Where(r => r.HotelId == h.HotelId &&
                             (r.Status == ReservationStatus.CheckIn || r.Status == ReservationStatus.Confirmada) &&
                             r.CheckInDate <= today &&
@@ -156,7 +167,7 @@ public class DashboardController : ControllerBase
                 .Distinct()
                 .CountAsync();
 
-            decimal hMonthRev = await _dbContext.FolioPayments
+            decimal hMonthRev = await _dbContext.FolioPayments.IgnoreQueryFilters()
                 .Where(p => p.Folio.HotelId == h.HotelId && p.CreatedAt >= startOfMonth)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
@@ -226,6 +237,10 @@ public class DashboardController : ControllerBase
         if (!filterHotelId.HasValue || filterHotelId.Value == 0)
         {
             _tenantContext.IsGlobalBypass = true;
+        }
+        else if (TenantAuthorizationHelper.IsGlobalRole(_currentUserService.Role))
+        {
+            _tenantContext.SetHotelContext(filterHotelId.Value);
         }
 
         var today = DateTime.UtcNow.Date;

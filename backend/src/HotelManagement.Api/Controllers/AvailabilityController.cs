@@ -186,7 +186,7 @@ public class AvailabilityController : ControllerBase
     }
 
     // RF-29 / HU-14: Calendario de ocupación de 14 días
-    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Housekeeping},{UserRole.Auditor},{UserRole.Socio}")]
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("calendar")]
     public async Task<ActionResult<OccupancyCalendarDto>> GetOccupancyCalendar([FromQuery] DateTime? startDate)
     {

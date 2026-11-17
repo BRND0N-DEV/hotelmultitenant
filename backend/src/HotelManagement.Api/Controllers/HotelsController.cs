@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
+using HotelManagement.Api.Services;
 using HotelManagement.Domain.Entities;
 using HotelManagement.Domain.Enums;
 
@@ -18,16 +19,28 @@ namespace HotelManagement.Api.Controllers;
 public class HotelsController : ControllerBase
 {
     private readonly IHotelDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public HotelsController(IHotelDbContext dbContext)
+    public HotelsController(IHotelDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.Socio},{UserRole.Auditor},{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<HotelDto>>> GetHotels()
     {
-        var hotels = await _dbContext.Hotels
+        var query = _dbContext.Hotels.AsQueryable();
+
+        if (!TenantAuthorizationHelper.IsGlobalRole(_currentUserService.Role))
+        {
+            if (!_currentUserService.UserId.HasValue) return Unauthorized();
+            int userId = _currentUserService.UserId.Value;
+            query = query.Where(h => _dbContext.HotelUsers.Any(hu => hu.UserId == userId && hu.HotelId == h.HotelId));
+        }
+
+        var hotels = await query
             .Select(h => new HotelDto
             {
                 HotelId = h.HotelId,
@@ -49,9 +62,21 @@ public class HotelsController : ControllerBase
         return Ok(hotels);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.Socio},{UserRole.Auditor},{UserRole.AdminSede},{UserRole.Recepcionista}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<HotelDto>> GetHotel(int id)
     {
+        if (!TenantAuthorizationHelper.IsGlobalRole(_currentUserService.Role))
+        {
+            if (!_currentUserService.UserId.HasValue) return Unauthorized();
+            bool isAssigned = await _dbContext.HotelUsers
+                .AnyAsync(hu => hu.UserId == _currentUserService.UserId.Value && hu.HotelId == id);
+            if (!isAssigned)
+            {
+                return NotFound(new { message = "Hotel no encontrado." });
+            }
+        }
+
         var h = await _dbContext.Hotels
             .Include(h => h.Rooms)
             .Include(h => h.Reservations)
@@ -132,6 +157,7 @@ public class HotelsController : ControllerBase
         if (hotel.IsActive && !dto.IsActive)
         {
             int blockingReservations = await _dbContext.Reservations
+                .IgnoreQueryFilters()
                 .CountAsync(r => r.HotelId == id &&
                                  (r.Status == ReservationStatus.Pendiente ||
                                   r.Status == ReservationStatus.Confirmada ||

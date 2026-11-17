@@ -66,55 +66,111 @@ public class TenantResolutionMiddleware
 
         // 2. Extraer HotelId: primero del encabezado X-Hotel-Id, luego del Claim del Token JWT
         int? resolvedHotelId = null;
+        var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        bool isGlobalRole = userRole == UserRole.AdminGlobal || userRole == UserRole.Socio || userRole == UserRole.Auditor;
 
-        if (context.Request.Headers.TryGetValue("X-Hotel-Id", out var hotelHeader) && int.TryParse(hotelHeader, out var hId))
+        if (context.User.Identity?.IsAuthenticated == true)
         {
-            resolvedHotelId = hId;
+            var userIdStr = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var authUserId))
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                return;
+            }
+
+            bool isActiveUser = await dbContext.Users.AnyAsync(u => u.UserId == authUserId && u.IsActive);
+            if (!isActiveUser)
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                context.Response.ContentType = "application/problem+json";
+                var inactiveProblem = new ProblemDetails
+                {
+                    Status = (int)HttpStatusCode.Unauthorized,
+                    Title = "Sesión inválida o usuario desactivado",
+                    Detail = "La cuenta de usuario no se encuentra activa."
+                };
+                await context.Response.WriteAsync(JsonSerializer.Serialize(inactiveProblem));
+                return;
+            }
+        }
+
+        if (context.Request.Headers.TryGetValue("X-Hotel-Id", out var hotelHeader))
+        {
+            if (!int.TryParse(hotelHeader, out var hId))
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                context.Response.ContentType = "application/problem+json";
+                var badHeader = new ProblemDetails
+                {
+                    Status = (int)HttpStatusCode.BadRequest,
+                    Title = "Encabezado de sede inválido",
+                    Detail = "El encabezado X-Hotel-Id debe ser un identificador numérico válido."
+                };
+                await context.Response.WriteAsync(JsonSerializer.Serialize(badHeader));
+                return;
+            }
+
+            if (isGlobalRole && hId == 0)
+            {
+                resolvedHotelId = null;
+            }
+            else
+            {
+                resolvedHotelId = hId;
+            }
         }
         else
         {
             var claim = context.User.FindFirst("HotelId")?.Value;
-            if (int.TryParse(claim, out var cId))
+            if (int.TryParse(claim, out var cId) && !(isGlobalRole && cId == 0))
             {
                 resolvedHotelId = cId;
             }
         }
 
-        var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-
-        // Socio y AdminGlobal pueden omitir el filtro de tenant para reportes consolidados si no se especifica hotel
-        if ((userRole == UserRole.AdminGlobal || userRole == UserRole.Socio || userRole == UserRole.Auditor) && resolvedHotelId == null)
+        // Socio, Auditor y AdminGlobal pueden omitir el filtro de tenant para reportes consolidados si no se especifica hotel
+        if (isGlobalRole && resolvedHotelId == null)
         {
             tenantContext.IsGlobalBypass = true;
         }
-        else if (resolvedHotelId.HasValue)
+        else if (context.User.Identity?.IsAuthenticated == true && !isGlobalRole)
         {
-            // Validar que el usuario tenga asignado este hotel o sea AdminGlobal/Socio/Auditor
-            if (context.User.Identity?.IsAuthenticated == true)
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
             {
-                var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out var userId) && userRole != UserRole.AdminGlobal && userRole != UserRole.Socio && userRole != UserRole.Auditor)
-                {
-                    bool isAssigned = await dbContext.HotelUsers
-                        .AnyAsync(hu => hu.UserId == userId && hu.HotelId == resolvedHotelId.Value);
-
-                    if (!isAssigned)
-                    {
-                        // RF-07: Intento de acceder a recursos de otra sede responde 404 (No Encontrado)
-                        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                        context.Response.ContentType = "application/problem+json";
-                        var problem = new ProblemDetails
-                        {
-                            Status = (int)HttpStatusCode.NotFound,
-                            Title = "Recurso no encontrado",
-                            Detail = "El recurso solicitado no existe o no se encuentra disponible."
-                        };
-                        await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
-                        return;
-                    }
-                }
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                return;
             }
 
+            if (!resolvedHotelId.HasValue)
+            {
+                resolvedHotelId = await dbContext.HotelUsers
+                    .Where(hu => hu.UserId == userId)
+                    .OrderByDescending(hu => hu.IsDefault)
+                    .Select(hu => (int?)hu.HotelId)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (!resolvedHotelId.HasValue || resolvedHotelId.Value <= 0 ||
+                !await dbContext.HotelUsers.AnyAsync(hu => hu.UserId == userId && hu.HotelId == resolvedHotelId.Value))
+            {
+                // RF-07: Intento de acceder a recursos de otra sede responde 404 (No Encontrado)
+                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.ContentType = "application/problem+json";
+                var problem = new ProblemDetails
+                {
+                    Status = (int)HttpStatusCode.NotFound,
+                    Title = "Recurso no encontrado",
+                    Detail = "El recurso solicitado no existe o no se encuentra disponible."
+                };
+                await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
+                return;
+            }
+
+            tenantContext.SetHotelContext(resolvedHotelId.Value);
+        }
+        else if (resolvedHotelId.HasValue)
+        {
             tenantContext.SetHotelContext(resolvedHotelId.Value);
         }
 

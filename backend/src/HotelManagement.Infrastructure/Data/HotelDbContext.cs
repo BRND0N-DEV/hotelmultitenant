@@ -106,6 +106,9 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasIndex(rt => new { rt.HotelId, rt.Code }).IsUnique();
             b.Property(rt => rt.BasePrice).HasColumnType("decimal(18,2)");
             b.HasOne(rt => rt.Hotel).WithMany(h => h.RoomTypes).HasForeignKey(rt => rt.HotelId);
+
+            // Multitenant Query Filter
+            b.HasQueryFilter(rt => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && rt.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 6. Room (Multitenant & Concurrency)
@@ -121,7 +124,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasOne(r => r.RoomType).WithMany(rt => rt.Rooms).HasForeignKey(r => r.RoomTypeId);
 
             // Multitenant Query Filter
-            b.HasQueryFilter(r => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && r.HotelId == _tenantContext.CurrentHotelId.Value));
+            b.HasQueryFilter(r => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && r.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 7. Season
@@ -131,6 +134,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasKey(s => s.SeasonId);
             b.Property(s => s.PriceMultiplier).HasColumnType("decimal(5,2)");
             b.HasOne(s => s.Hotel).WithMany(h => h.Seasons).HasForeignKey(s => s.HotelId);
+            b.HasQueryFilter(s => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && s.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 8. Promotion
@@ -141,6 +145,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasIndex(p => new { p.HotelId, p.Code }).IsUnique();
             b.Property(p => p.DiscountPercent).HasColumnType("decimal(5,2)");
             b.HasOne(p => p.Hotel).WithMany(h => h.Promotions).HasForeignKey(p => p.HotelId);
+            b.HasQueryFilter(p => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && p.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 9. HotelTax
@@ -150,6 +155,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasKey(t => t.TaxId);
             b.Property(t => t.Percentage).HasColumnType("decimal(5,2)");
             b.HasOne(t => t.Hotel).WithMany(h => h.Taxes).HasForeignKey(t => t.HotelId);
+            b.HasQueryFilter(t => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && t.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 10. CancellationPolicy
@@ -159,6 +165,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasKey(cp => cp.PolicyId);
             b.Property(cp => cp.PenaltyPercent).HasColumnType("decimal(5,2)");
             b.HasOne(cp => cp.Hotel).WithMany(h => h.CancellationPolicies).HasForeignKey(cp => cp.HotelId);
+            b.HasQueryFilter(cp => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && cp.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 11. AdditionalService
@@ -169,7 +176,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.Property(s => s.Price).HasColumnType("decimal(18,2)");
             b.HasOne(s => s.Hotel).WithMany(h => h.AdditionalServices).HasForeignKey(s => s.HotelId);
 
-            b.HasQueryFilter(s => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && s.HotelId == _tenantContext.CurrentHotelId.Value));
+            b.HasQueryFilter(s => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && s.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 12. CashShift
@@ -185,7 +192,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasOne(cs => cs.Hotel).WithMany(h => h.CashShifts).HasForeignKey(cs => cs.HotelId);
             b.HasOne(cs => cs.User).WithMany().HasForeignKey(cs => cs.UserId);
 
-            b.HasQueryFilter(cs => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && cs.HotelId == _tenantContext.CurrentHotelId.Value));
+            b.HasQueryFilter(cs => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && cs.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 13. Guest
@@ -196,7 +203,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasIndex(g => new { g.HotelId, g.DocumentType, g.DocumentNumber }).IsUnique();
             b.HasOne(g => g.Hotel).WithMany().HasForeignKey(g => g.HotelId);
 
-            b.HasQueryFilter(g => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && g.HotelId == _tenantContext.CurrentHotelId.Value));
+            b.HasQueryFilter(g => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && g.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 14. DataConsent
@@ -205,6 +212,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.ToTable("DataConsents");
             b.HasKey(dc => dc.ConsentId);
             b.HasOne(dc => dc.Guest).WithMany(g => g.DataConsents).HasForeignKey(dc => dc.GuestId);
+            b.HasQueryFilter(dc => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && dc.Guest.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 15. Reservation (Multitenant & Concurrency & Database Trigger)
@@ -227,7 +235,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasOne(res => res.CancellationPolicy).WithMany().HasForeignKey(res => res.CancellationPolicyId);
 
             // Multitenant Query Filter
-            b.HasQueryFilter(res => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && res.HotelId == _tenantContext.CurrentHotelId.Value));
+            b.HasQueryFilter(res => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && res.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 16. ReservationCompanion
@@ -236,6 +244,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.ToTable("ReservationCompanions");
             b.HasKey(c => c.CompanionId);
             b.HasOne(c => c.Reservation).WithMany(r => r.Companions).HasForeignKey(c => c.ReservationId);
+            b.HasQueryFilter(c => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && c.Reservation.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 17. ReservationStateHistory
@@ -245,6 +254,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasKey(h => h.HistoryId);
             b.HasOne(h => h.Reservation).WithMany(r => r.StateHistories).HasForeignKey(h => h.ReservationId);
             b.HasOne(h => h.ChangedByUser).WithMany().HasForeignKey(h => h.ChangedByUserId);
+            b.HasQueryFilter(h => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && h.Reservation.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 18. Folio
@@ -262,7 +272,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasOne(f => f.Reservation).WithOne(r => r.Folio).HasForeignKey<Folio>(f => f.ReservationId);
             b.HasOne(f => f.Hotel).WithMany().HasForeignKey(f => f.HotelId);
 
-            b.HasQueryFilter(f => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && f.HotelId == _tenantContext.CurrentHotelId.Value));
+            b.HasQueryFilter(f => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && f.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 19. FolioCharge
@@ -277,6 +287,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasOne(c => c.Folio).WithMany(f => f.Charges).HasForeignKey(c => c.FolioId);
             b.HasOne(c => c.Service).WithMany().HasForeignKey(c => c.ServiceId);
             b.HasOne(c => c.CreatedByUser).WithMany().HasForeignKey(c => c.CreatedByUserId);
+            b.HasQueryFilter(c => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && c.Folio.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 20. FolioPayment
@@ -290,6 +301,7 @@ public class HotelDbContext : DbContext, IHotelDbContext
             b.HasOne(p => p.Folio).WithMany(f => f.Payments).HasForeignKey(p => p.FolioId);
             b.HasOne(p => p.CashShift).WithMany(cs => cs.Payments).HasForeignKey(p => p.CashShiftId);
             b.HasOne(p => p.CreatedByUser).WithMany().HasForeignKey(p => p.CreatedByUserId);
+            b.HasQueryFilter(p => _tenantContext.IsGlobalBypass || (_tenantContext.CurrentHotelId != null && p.Folio.HotelId == _tenantContext.CurrentHotelId));
         });
 
         // 21. AuditLog

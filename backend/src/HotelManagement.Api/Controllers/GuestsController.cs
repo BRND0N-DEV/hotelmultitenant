@@ -31,15 +31,19 @@ public class GuestsController : ControllerBase
         _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GuestDto>>> GetGuests([FromQuery] string? search)
     {
-        int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
-
         var query = _dbContext.Guests
             .Include(g => g.DataConsents)
-            .Where(g => g.HotelId == targetHotelId)
             .AsQueryable();
+
+        if (!_tenantContext.IsGlobalBypass || _tenantContext.CurrentHotelId.HasValue)
+        {
+            int targetHotelId = _tenantContext.CurrentHotelId ?? 1;
+            query = query.Where(g => g.HotelId == targetHotelId);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -72,6 +76,7 @@ public class GuestsController : ControllerBase
         return Ok(guests);
     }
 
+    [Authorize(Roles = $"{UserRole.AdminGlobal},{UserRole.AdminSede},{UserRole.Recepcionista},{UserRole.Auditor}")]
     [HttpGet("{id}")]
     public async Task<ActionResult<GuestDto>> GetGuest(int id)
     {
@@ -79,7 +84,10 @@ public class GuestsController : ControllerBase
             .Include(g => g.DataConsents)
             .FirstOrDefaultAsync(g => g.GuestId == id);
 
-        if (g == null) return NotFound(new { message = "Huésped no encontrado." });
+        if (g == null || (!_tenantContext.IsGlobalBypass && _tenantContext.CurrentHotelId.HasValue && g.HotelId != _tenantContext.CurrentHotelId.Value))
+        {
+            return NotFound(new { message = "Huésped no encontrado." });
+        }
 
         return Ok(new GuestDto
         {

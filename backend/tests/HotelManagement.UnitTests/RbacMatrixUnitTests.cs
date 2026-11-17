@@ -108,4 +108,70 @@ public class RbacMatrixUnitTests
         actualCanManageReservations.Should().Be(canManageReservations);
         actualCanViewAudit.Should().Be(canViewAudit);
     }
+
+    [Theory]
+    [InlineData(ReservationStatus.Pendiente, ReservationStatus.CheckOut)]
+    [InlineData(ReservationStatus.Pendiente, ReservationStatus.Liquidada)]
+    [InlineData(ReservationStatus.Confirmada, ReservationStatus.CheckOut)]
+    [InlineData(ReservationStatus.Confirmada, ReservationStatus.Liquidada)]
+    [InlineData(ReservationStatus.CheckOut, ReservationStatus.CheckIn)]
+    [InlineData(ReservationStatus.CheckOut, ReservationStatus.Anulada)]
+    [InlineData(ReservationStatus.Anulada, ReservationStatus.Pendiente)]
+    [InlineData(ReservationStatus.Anulada, ReservationStatus.Confirmada)]
+    [InlineData(ReservationStatus.Anulada, ReservationStatus.CheckIn)]
+    [InlineData(ReservationStatus.NoShow, ReservationStatus.CheckIn)]
+    [InlineData(ReservationStatus.NoShow, ReservationStatus.Anulada)]
+    [InlineData(ReservationStatus.Liquidada, ReservationStatus.Anulada)]
+    public void StateMachine_IllegalOrTerminalTransitions_ShouldAlwaysThrow(ReservationStatus from, ReservationStatus to)
+    {
+        Action act = () => ReservationStateMachine.ValidateTransition(from, to);
+        act.Should().Throw<InvalidStateTransitionException>();
+    }
+
+    [Theory]
+    [InlineData(ReservationStatus.Liquidada)]
+    [InlineData(ReservationStatus.Anulada)]
+    [InlineData(ReservationStatus.NoShow)]
+    public void StateMachine_TerminalStates_ShouldHaveZeroAvailableTransitions(ReservationStatus terminalStatus)
+    {
+        var transitions = ReservationStateMachine.GetAvailableTransitions(terminalStatus);
+        transitions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UserAccount_LockoutAndReset_ShouldEnforce5AttemptsPolicy()
+    {
+        var user = new User { Email = "qa.test@hotelchain.com", Role = UserRole.Recepcionista, IsActive = true };
+
+        for (int i = 1; i <= 4; i++)
+        {
+            user.RecordFailedLogin();
+            user.IsLockedOut().Should().BeFalse();
+        }
+
+        user.RecordFailedLogin();
+        user.IsLockedOut().Should().BeTrue();
+        user.LockoutEnd.Should().NotBeNull();
+        user.LockoutEnd!.Value.Should().BeAfter(DateTime.UtcNow);
+
+        user.ResetLoginLockout();
+        user.IsLockedOut().Should().BeFalse();
+        user.FailedLoginAttempts.Should().Be(0);
+    }
+
+    [Fact]
+    public void FolioRecalculateTotals_WithChargesTaxesAndPayments_ShouldComputeExactBalance()
+    {
+        var folio = new Folio { Status = FolioStatus.Abierto };
+        folio.Charges.Add(new FolioCharge { Amount = 100000m, TaxAmount = 19000m, IsAnnulled = false });
+        folio.Charges.Add(new FolioCharge { Amount = 50000m, TaxAmount = 9500m, IsAnnulled = true });
+        folio.Payments.Add(new FolioPayment { Amount = 50000m });
+
+        folio.RecalculateTotals();
+
+        folio.TotalCharges.Should().Be(100000m);
+        folio.TotalTaxes.Should().Be(19000m);
+        folio.TotalPayments.Should().Be(50000m);
+        folio.Balance.Should().Be(69000m);
+    }
 }
