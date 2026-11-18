@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using HotelManagement.Application.DTOs;
 using HotelManagement.Application.Interfaces;
 using HotelManagement.Api.Services;
@@ -19,41 +20,75 @@ namespace HotelManagement.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private const string InvalidCredentialsMessage = "Las credenciales ingresadas no son válidas. Verifique su usuario y contraseña.";
+    private const string DummyBcryptHash = "$2a$11$CwTycUXWue0Thq9StjUM0uJ8p4K7/3e3r.H.K4p.8f/8b4K7/3e3r";
+
     private readonly IHotelDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly ITenantContext _tenantContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IHotelDbContext dbContext,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         ITenantContext tenantContext,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ILogger<AuthController> logger)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _tenantContext = tenantContext;
         _currentUserService = currentUserService;
+        _logger = logger;
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto dto)
+    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto? dto)
     {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+        {
+            return BadRequest(new { message = "Por favor complete todos los campos obligatorios (correo electrónico y contraseña)." });
+        }
+
+        string normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        string clientIp = _currentUserService.IpAddress
+                          ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+                          ?? "127.0.0.1";
+
         var user = await _dbContext.Users
             .Include(u => u.HotelUsers)
                 .ThenInclude(hu => hu.Hotel)
-            .FirstOrDefaultAsync(u => u.Email == dto.Email.Trim().ToLowerInvariant());
+            .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
 
         if (user == null)
         {
-            return Unauthorized(new { message = "Credenciales incorrectas." });
+            // Mitigación de enumeración de usuarios por tiempo de respuesta (timing attack)
+            try { _passwordHasher.Verify(dto.Password, DummyBcryptHash); } catch { }
+
+            _logger.LogWarning("Intento de inicio de sesión con usuario no registrado: {Email} desde IP {Ip}", normalizedEmail, clientIp);
+            await TryRecordLoginAuditAsync(null, null, "LoginFailed", new
+            {
+                Email = normalizedEmail,
+                Reason = "Usuario no registrado en el sistema",
+                IpAddress = clientIp
+            }, clientIp);
+
+            return Unauthorized(new { message = InvalidCredentialsMessage });
         }
 
         if (!user.IsActive)
         {
+            _logger.LogWarning("Intento de inicio de sesión en cuenta desactivada: {Email}", normalizedEmail);
+            await TryRecordLoginAuditAsync(user.UserId, user.HotelUsers.FirstOrDefault()?.HotelId, "LoginRejectedInactive", new
+            {
+                Email = user.Email,
+                Reason = "Cuenta de usuario inactiva"
+            }, clientIp);
+
             return Unauthorized(new { message = "La cuenta de usuario se encuentra desactivada. Contacte al Administrador Global." });
         }
 
@@ -67,13 +102,26 @@ public class AuthController : ControllerBase
             user.RecordFailedLogin();
             await _dbContext.SaveChangesAsync();
 
-            if (user.IsLockedOut())
+            bool lockedNow = user.IsLockedOut();
+            await TryRecordLoginAuditAsync(
+                user.UserId,
+                user.HotelUsers.FirstOrDefault()?.HotelId,
+                lockedNow ? "AccountLockedOut" : "LoginFailed",
+                new
+                {
+                    Email = user.Email,
+                    FailedLoginAttempts = user.FailedLoginAttempts,
+                    IsLockedOut = lockedNow,
+                    LockoutEnd = user.LockoutEnd
+                },
+                clientIp);
+
+            if (lockedNow)
             {
                 return StatusCode(423, new { message = "Cuenta bloqueada temporalmente por 15 minutos tras 5 intentos fallidos consecutivos." });
             }
 
-            int remaining = 5 - user.FailedLoginAttempts;
-            return Unauthorized(new { message = $"Contraseña incorrecta. Intentos restantes antes de bloqueo: {remaining}" });
+            return Unauthorized(new { message = InvalidCredentialsMessage });
         }
 
         if (user.FailedLoginAttempts > 0 || user.LockoutEnd.HasValue)
@@ -395,6 +443,31 @@ public class AuthController : ControllerBase
                 IsDefault = hu.IsDefault || hu.HotelId == activeHotelId
             })
             .ToList();
+    }
+
+    private async Task TryRecordLoginAuditAsync(int? userId, int? hotelId, string action, object details, string ipAddress)
+    {
+        try
+        {
+            _dbContext.AuditLogs.Add(new AuditLog
+            {
+                UserId = userId,
+                HotelId = hotelId,
+                Level = AuditLevel.Negocio,
+                Action = action,
+                EntityName = "User",
+                EntityId = userId?.ToString(),
+                NewValues = JsonSerializer.Serialize(details),
+                Timestamp = DateTime.UtcNow,
+                IpAddress = ipAddress,
+                CorrelationId = HttpContext.TraceIdentifier
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No fue posible registrar el evento de auditoría de autenticación ({Action}).", action);
+        }
     }
 }
 

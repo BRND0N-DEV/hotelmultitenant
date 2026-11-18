@@ -279,6 +279,12 @@ public class ReservationsController : ControllerBase
         if (policy == null) return BadRequest(new { message = "No hay políticas de cancelación configuradas." });
 
         // 4. Registro o búsqueda de huésped titular
+        if (dto.PrimaryGuest == null || string.IsNullOrWhiteSpace(dto.PrimaryGuest.Email))
+        {
+            return BadRequest(new { message = "Debe proporcionar el correo electrónico del huésped titular para la confirmación de la reserva." });
+        }
+
+        string requestedGuestEmail = dto.PrimaryGuest.Email.Trim().ToLowerInvariant();
         var guest = await _dbContext.Guests
             .FirstOrDefaultAsync(g => g.HotelId == targetHotelId &&
                                       g.DocumentNumber == dto.PrimaryGuest.DocumentNumber.Trim());
@@ -292,12 +298,19 @@ public class ReservationsController : ControllerBase
                 DocumentNumber = dto.PrimaryGuest.DocumentNumber.Trim(),
                 FirstName = dto.PrimaryGuest.FirstName.Trim(),
                 LastName = dto.PrimaryGuest.LastName.Trim(),
-                Email = dto.PrimaryGuest.Email.Trim().ToLowerInvariant(),
+                Email = requestedGuestEmail,
                 Phone = dto.PrimaryGuest.Phone.Trim(),
                 Nationality = dto.PrimaryGuest.Nationality.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.Guests.Add(guest);
+            await _dbContext.SaveChangesAsync();
+        }
+        else if (!guest.IsAnonymized && !string.Equals(guest.Email, requestedGuestEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            guest.Email = requestedGuestEmail;
+            if (!string.IsNullOrWhiteSpace(dto.PrimaryGuest.Phone))
+                guest.Phone = dto.PrimaryGuest.Phone.Trim();
             await _dbContext.SaveChangesAsync();
         }
 
@@ -404,11 +417,6 @@ public class ReservationsController : ControllerBase
         _dbContext.Folios.Add(folio);
         await _dbContext.SaveChangesAsync();
 
-        // 8. Envío asíncrono de correo con QR (RF-43, RF-44)
-        var verificationUrl = $"{Request.Scheme}://{Request.Host}/api/reservations/verify-voucher/{reservation.Code}";
-        var qrCodeBytes = _qrCodeService.GenerateQrCodePng(verificationUrl);
-        _ = _emailService.SendReservationVoucherAsync(reservation, guest.Email, qrCodeBytes);
-
         var resultDto = new ReservationDto
         {
             ReservationId = reservation.ReservationId,
@@ -446,6 +454,11 @@ public class ReservationsController : ControllerBase
             });
             await _dbContext.SaveChangesAsync();
         }
+
+        // 8. Envío asíncrono de correo real con QR únicamente después de confirmar toda la persistencia en SQL Server (RF-43, RF-44)
+        var verificationUrl = $"{Request.Scheme}://{Request.Host}/api/reservations/verify-voucher/{reservation.Code}";
+        var qrCodeBytes = _qrCodeService.GenerateQrCodePng(verificationUrl);
+        _ = _emailService.SendReservationVoucherAsync(reservation, guest.Email, qrCodeBytes);
 
         return CreatedAtAction(nameof(GetReservation), new { id = reservation.ReservationId }, resultDto);
     }
@@ -600,6 +613,7 @@ public class ReservationsController : ControllerBase
 
         var r = await _dbContext.Reservations
             .Include(r => r.Room)
+            .Include(r => r.Guest)
             .FirstOrDefaultAsync(r => r.ReservationId == id);
 
         if (r == null) return NotFound(new { message = "Reserva no encontrada." });
@@ -629,6 +643,14 @@ public class ReservationsController : ControllerBase
         });
 
         await _dbContext.SaveChangesAsync();
+
+        if (dto.NewStatus == ReservationStatus.Confirmada && r.Guest != null && !string.IsNullOrWhiteSpace(r.Guest.Email))
+        {
+            var verificationUrl = $"{Request.Scheme}://{Request.Host}/api/reservations/verify-voucher/{r.Code}";
+            var qrCodeBytes = _qrCodeService.GenerateQrCodePng(verificationUrl);
+            _ = _emailService.SendReservationVoucherAsync(r, r.Guest.Email, qrCodeBytes);
+        }
+
         return Ok(new { message = $"Estado de la reserva actualizado a '{dto.NewStatus}'.", status = r.Status });
     }
 

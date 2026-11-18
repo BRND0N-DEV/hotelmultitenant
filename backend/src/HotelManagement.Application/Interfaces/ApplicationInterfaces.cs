@@ -69,7 +69,17 @@ public interface IQrCodeService
     byte[] GenerateQrCodePng(string payload);
 }
 
+public class EmailDeliveryResult
+{
+    public bool Success { get; set; }
+    public int Attempts { get; set; }
+    public string Recipient { get; set; } = string.Empty;
+    public string ReservationCode { get; set; } = string.Empty;
+    public string? ErrorMessage { get; set; }
+}
+
 public interface IEmailNotificationService
 {
     Task SendReservationVoucherAsync(Reservation reservation, string toEmail, byte[] qrCode);
+    Task<EmailDeliveryResult> SendReservationConfirmationAsync(int reservationId, string toEmail, byte[] qrCode, CancellationToken cancellationToken = default);
 }

@@ -86,7 +86,7 @@ public class HotelApiIntegrationTests : IClassFixture<CustomWebApplicationFactor
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         var content = await response.Content.ReadAsStringAsync();
-        content.Should().Contain("Contraseña incorrecta");
+        content.Should().Contain("Las credenciales ingresadas no son válidas");
     }
 
     // RF-07: Aislamiento multitenant - Usuario de Bogotá intentando acceder con X-Hotel-Id de otra sede no autorizada recibe 404

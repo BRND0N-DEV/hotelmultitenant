@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -13,6 +14,32 @@ using HotelManagement.Api.Services;
 using HotelManagement.Application.Interfaces;
 using HotelManagement.Infrastructure.Data;
 using HotelManagement.Infrastructure.Services;
+
+// 0. Carga segura de variables de entorno desde archivo .env local si existe (sin exponer secretos en código)
+foreach (var envCandidate in new[]
+{
+    Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+    Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".env")
+})
+{
+    if (File.Exists(envCandidate))
+    {
+        foreach (var rawLine in File.ReadAllLines(envCandidate))
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
+            var sepIndex = line.IndexOf('=');
+            if (sepIndex <= 0) continue;
+            var envKey = line[..sepIndex].Trim();
+            var envVal = line[(sepIndex + 1)..].Trim().Trim('"');
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envKey)))
+            {
+                Environment.SetEnvironmentVariable(envKey, envVal);
+            }
+        }
+        break;
+    }
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
